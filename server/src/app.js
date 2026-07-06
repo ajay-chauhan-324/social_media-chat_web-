@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import mongoSanitize from 'express-mongo-sanitize';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 import env from './config/env.js';
@@ -43,9 +44,11 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 // API
 app.use('/api', apiLimiter, routes);
 
-// In production, serve the built React client (single-service deploy).
-if (env.isProd) {
-  const clientDist = path.join(__dirname, '..', '..', 'client', 'dist');
+// In production, serve the built React client if it was bundled alongside the
+// server (single-service deploy). When the client is hosted separately (e.g.
+// Vercel), client/dist won't exist and we run API-only.
+const clientDist = path.join(__dirname, '..', '..', 'client', 'dist');
+if (env.isProd && fs.existsSync(path.join(clientDist, 'index.html'))) {
   app.use(express.static(clientDist));
   // SPA fallback: any non-API GET returns index.html so client-side routing works.
   app.get(/^\/(?!api\/|uploads\/).*/, (_req, res) =>
