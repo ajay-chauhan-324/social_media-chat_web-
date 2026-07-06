@@ -7,7 +7,9 @@ import { selectIsAuthenticated, selectUser } from '@/features/auth/authSlice';
 import { chatKeys } from '@/features/chat/chatKeys';
 
 const SocketContext = createContext(null);
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL ||
+  (import.meta.env.DEV ? 'http://localhost:5000' : window.location.origin);
 
 export function SocketProvider({ children }) {
   const isAuthenticated = useSelector(selectIsAuthenticated);

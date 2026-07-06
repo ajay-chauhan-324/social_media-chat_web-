@@ -43,9 +43,19 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 // API
 app.use('/api', apiLimiter, routes);
 
-app.get('/', (_req, res) =>
-  res.json({ name: 'ArtROOT Chat API', version: '1.0.0', docs: '/api/health' })
-);
+// In production, serve the built React client (single-service deploy).
+if (env.isProd) {
+  const clientDist = path.join(__dirname, '..', '..', 'client', 'dist');
+  app.use(express.static(clientDist));
+  // SPA fallback: any non-API GET returns index.html so client-side routing works.
+  app.get(/^\/(?!api\/|uploads\/).*/, (_req, res) =>
+    res.sendFile(path.join(clientDist, 'index.html'))
+  );
+} else {
+  app.get('/', (_req, res) =>
+    res.json({ name: 'ArtROOT Chat API', version: '1.0.0', docs: '/api/health' })
+  );
+}
 
 // Errors
 app.use(notFoundHandler);

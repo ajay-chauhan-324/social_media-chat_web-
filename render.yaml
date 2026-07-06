@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: artroot-chat
+    runtime: node
+    plan: free
+    # Repo root as the service root (leave "Root Directory" blank in the dashboard).
+    buildCommand: npm install && npm run render-build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Set to this service's own URL after the first deploy (needed for CORS,
+      # cookies, and Socket.io), e.g. https://artroot-chat.onrender.com
+      - key: CLIENT_URL
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      # Optional integrations — leave unset to run in mock mode.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
