@@ -137,6 +137,7 @@ export default function MessageList({ conversationId, conversation, onReply }) {
                 showAvatar={showAvatar}
                 seen={seen}
                 onReply={onReply}
+                myId={user?._id}
               />
             </div>
           );

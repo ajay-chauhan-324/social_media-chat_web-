@@ -7,6 +7,12 @@ const imageSchema = new Schema(
   { _id: false }
 );
 
+// One reaction per user per message (a user's emoji is replaced, not stacked).
+const reactionSchema = new Schema(
+  { user: { type: Schema.Types.ObjectId, ref: 'User', required: true }, emoji: { type: String, required: true } },
+  { _id: false }
+);
+
 const messageSchema = new Schema(
   {
     conversation: { type: Schema.Types.ObjectId, ref: 'Conversation', required: true, index: true },
@@ -16,6 +22,8 @@ const messageSchema = new Schema(
     images: { type: [imageSchema], default: [] },
 
     replyTo: { type: Schema.Types.ObjectId, ref: 'Message', default: null },
+
+    reactions: { type: [reactionSchema], default: [] },
 
     // Who has read this message (used for group seen-by; private uses lastReadAt).
     readBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],

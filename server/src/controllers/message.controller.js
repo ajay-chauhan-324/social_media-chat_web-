@@ -45,6 +45,17 @@ export const togglePin = asyncHandler(async (req, res) => {
   return ApiResponse.ok(res, { message }, message.isPinned ? 'Pinned' : 'Unpinned');
 });
 
+export const reactMessage = asyncHandler(async (req, res) => {
+  const message = await messageService.toggleReaction(
+    req.params.messageId,
+    req.user.id,
+    req.body.emoji
+  );
+  // Reuse the existing message-update fan-out; clients patch it into cache.
+  emitToConversation(message.conversation, 'message:updated', { message });
+  return ApiResponse.ok(res, { message }, 'Reaction updated');
+});
+
 export const getPinned = asyncHandler(async (req, res) => {
   const messages = await messageService.getPinned(req.params.id, req.user.id);
   return ApiResponse.ok(res, { messages }, 'Pinned messages');

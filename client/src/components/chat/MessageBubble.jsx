@@ -8,9 +8,15 @@ import Lightbox from '@/components/ui/Lightbox';
 import useLongPress from '@/hooks/useLongPress';
 import { resolveMedia, timeAgo } from '@/lib/format';
 import { cn } from '@/lib/cn';
-import { useEditMessage, useDeleteMessage, usePinMessage } from '@/features/chat/useChat';
+import {
+  useEditMessage,
+  useDeleteMessage,
+  usePinMessage,
+  useReactMessage,
+} from '@/features/chat/useChat';
 
 const SWIPE_TRIGGER = 56; // px to drag before a reply fires
+const QUICK_REACTIONS = ['❤️', '😂', '👍', '😮', '😢', '🙏'];
 
 /** Desktop hover dropdown — driven by the same action list as the mobile sheet. */
 function BubbleMenu({ isMine, actions }) {
@@ -61,7 +67,7 @@ function BubbleMenu({ isMine, actions }) {
   );
 }
 
-function MessageBubble({ message, isMine, isGroup, showAvatar, seen, onReply }) {
+function MessageBubble({ message, isMine, isGroup, showAvatar, seen, onReply, myId }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.content);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -69,8 +75,20 @@ function MessageBubble({ message, isMine, isGroup, showAvatar, seen, onReply }) 
   const edit = useEditMessage();
   const del = useDeleteMessage();
   const pin = usePinMessage();
+  const react = useReactMessage();
 
   const deleted = message.isDeleted;
+  const toggleReaction = (emoji) => react.mutate({ id: message._id, emoji });
+
+  // Group reactions by emoji for compact pills, flagging the caller's own.
+  const reactionList = Object.values(
+    (message.reactions || []).reduce((acc, r) => {
+      acc[r.emoji] ??= { emoji: r.emoji, count: 0, mine: false };
+      acc[r.emoji].count += 1;
+      if (String(r.user?._id || r.user) === String(myId)) acc[r.emoji].mine = true;
+      return acc;
+    }, {})
+  );
 
   const startEdit = () => {
     setDraft(message.content);
@@ -222,6 +240,27 @@ function MessageBubble({ message, isMine, isGroup, showAvatar, seen, onReply }) 
           {!deleted && <BubbleMenu isMine={isMine} actions={actions} />}
         </div>
 
+        {reactionList.length > 0 && (
+          <div className={cn('mt-1 flex flex-wrap gap-1', isMine && 'justify-end')}>
+            {reactionList.map((r) => (
+              <button
+                key={r.emoji}
+                onClick={() => toggleReaction(r.emoji)}
+                aria-label={`${r.emoji} reaction${r.mine ? ', tap to remove' : ''}`}
+                className={cn(
+                  'flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs leading-none transition active:scale-90',
+                  r.mine
+                    ? 'border-brand-500 bg-brand-600/10 text-content'
+                    : 'border-line bg-surface text-muted hover:bg-surface-2'
+                )}
+              >
+                <span>{r.emoji}</span>
+                {r.count > 1 && <span className="tabular-nums">{r.count}</span>}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div
           className={cn(
             'mt-0.5 flex items-center gap-1 px-1 text-[11px] text-muted',
@@ -242,6 +281,22 @@ function MessageBubble({ message, isMine, isGroup, showAvatar, seen, onReply }) 
 
       {/* Mobile long-press action sheet */}
       <Modal open={sheetOpen} onClose={() => setSheetOpen(false)} size="sm">
+        <div className="mb-1 flex items-center justify-around">
+          {QUICK_REACTIONS.map((emoji) => (
+            <button
+              key={emoji}
+              onClick={() => {
+                setSheetOpen(false);
+                toggleReaction(emoji);
+              }}
+              aria-label={`React ${emoji}`}
+              className="grid h-11 w-11 place-items-center rounded-full text-2xl transition hover:bg-surface-2 active:scale-90"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+        <div className="my-1 border-t border-line" />
         <div className="flex flex-col">
           {actions.map((a) => (
             <button

@@ -58,6 +58,13 @@ export const usePinMessage = () =>
     onError: (err) => toast.error(getErrorMessage(err)),
   });
 
+export const useReactMessage = () =>
+  useMutation({
+    // The realtime 'message:updated' event patches the reaction into cache.
+    mutationFn: ({ id, emoji }) => messageService.react(id, emoji),
+    onError: (err) => toast.error(getErrorMessage(err)),
+  });
+
 export const useStartPrivate = () => {
   const qc = useQueryClient();
   return useMutation({

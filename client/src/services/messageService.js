@@ -13,6 +13,8 @@ const messageService = {
     api.patch(`/messages/${messageId}`, { content }).then((r) => r.data.data.message),
   remove: (messageId) => api.delete(`/messages/${messageId}`).then((r) => r.data.data),
   pin: (messageId) => api.post(`/messages/${messageId}/pin`).then((r) => r.data.data.message),
+  react: (messageId, emoji) =>
+    api.post(`/messages/${messageId}/react`, { emoji }).then((r) => r.data.data.message),
 };
 
 export default messageService;

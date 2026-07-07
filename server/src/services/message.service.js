@@ -10,7 +10,8 @@ const SENDER_FIELDS = 'name username avatar isVerified';
 const populateMessage = (query) =>
   query
     .populate('sender', SENDER_FIELDS)
-    .populate({ path: 'replyTo', populate: { path: 'sender', select: 'name username' } });
+    .populate({ path: 'replyTo', populate: { path: 'sender', select: 'name username' } })
+    .populate('reactions.user', 'name username');
 
 export const sendMessage = async (conversationId, senderId, { content = '', replyTo }, files = []) => {
   await assertMember(conversationId, senderId);
@@ -79,6 +80,25 @@ export const togglePin = async (messageId, userId) => {
   if (!message) throw ApiError.notFound('Message not found');
   await assertMember(message.conversation, userId);
   message.isPinned = !message.isPinned;
+  await message.save();
+  const populated = await populateMessage(Message.findById(messageId));
+  return populated.toObject();
+};
+
+/**
+ * Toggle the caller's emoji reaction on a message. One reaction per user:
+ * reacting with the same emoji removes it; a different emoji replaces it.
+ */
+export const toggleReaction = async (messageId, userId, emoji) => {
+  const message = await Message.findById(messageId);
+  if (!message) throw ApiError.notFound('Message not found');
+  if (message.isDeleted) throw ApiError.badRequest('Cannot react to a deleted message');
+  await assertMember(message.conversation, userId);
+
+  const mine = message.reactions.find((r) => String(r.user) === String(userId));
+  message.reactions = message.reactions.filter((r) => String(r.user) !== String(userId));
+  if (!mine || mine.emoji !== emoji) message.reactions.push({ user: userId, emoji });
+
   await message.save();
   const populated = await populateMessage(Message.findById(messageId));
   return populated.toObject();
