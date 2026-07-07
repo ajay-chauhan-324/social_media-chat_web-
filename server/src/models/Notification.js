@@ -8,7 +8,7 @@ const notificationSchema = new Schema(
     actor: { type: Schema.Types.ObjectId, ref: 'User' }, // who triggered it
     type: {
       type: String,
-      enum: ['like', 'comment', 'reply', 'follow', 'mention', 'message', 'ai', 'system'],
+      enum: ['like', 'comment', 'reply', 'follow', 'mention', 'message', 'reaction', 'ai', 'system'],
       required: true,
     },
     text: { type: String, default: '' }, // denormalized human-readable message

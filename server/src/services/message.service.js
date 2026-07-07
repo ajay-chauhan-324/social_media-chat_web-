@@ -1,9 +1,11 @@
 import mongoose from 'mongoose';
 import Message from '../models/Message.js';
 import Conversation from '../models/Conversation.js';
+import User from '../models/User.js';
 import ApiError from '../utils/ApiError.js';
 import { assertMember } from './conversation.service.js';
 import { uploadImages, destroyImage } from './upload.service.js';
+import { createNotification } from './notification.service.js';
 
 const SENDER_FIELDS = 'name username avatar isVerified';
 
@@ -96,10 +98,25 @@ export const toggleReaction = async (messageId, userId, emoji) => {
   await assertMember(message.conversation, userId);
 
   const mine = message.reactions.find((r) => String(r.user) === String(userId));
+  const added = !mine || mine.emoji !== emoji;
   message.reactions = message.reactions.filter((r) => String(r.user) !== String(userId));
-  if (!mine || mine.emoji !== emoji) message.reactions.push({ user: userId, emoji });
+  if (added) message.reactions.push({ user: userId, emoji });
 
   await message.save();
+
+  // Notify the message author when someone adds a reaction (best-effort;
+  // createNotification skips the case where you react to your own message).
+  if (added) {
+    const actor = await User.findById(userId).select('name');
+    createNotification({
+      recipient: message.sender,
+      actor: userId,
+      type: 'reaction',
+      text: `${actor?.name || 'Someone'} reacted ${emoji} to your message`,
+      conversation: message.conversation,
+    }).catch(() => {});
+  }
+
   const populated = await populateMessage(Message.findById(messageId));
   return populated.toObject();
 };

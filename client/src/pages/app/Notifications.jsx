@@ -7,6 +7,7 @@ import {
   FiCornerUpLeft,
   FiUserPlus,
   FiMail,
+  FiSmile,
   FiCpu,
   FiBell,
   FiCheckCircle,
@@ -29,13 +30,17 @@ const ICONS = {
   reply: { icon: FiCornerUpLeft, tone: 'text-violet-600 bg-violet-600/10' },
   follow: { icon: FiUserPlus, tone: 'text-success bg-success/10' },
   message: { icon: FiMail, tone: 'text-accent-500 bg-accent-500/10' },
+  reaction: { icon: FiSmile, tone: 'text-warning bg-warning/10' },
   ai: { icon: FiCpu, tone: 'text-violet-600 bg-violet-600/10' },
   system: { icon: FiBell, tone: 'text-muted bg-surface-2' },
 };
 
+const idOf = (ref) => (typeof ref === 'object' ? ref._id : ref);
+
 const linkFor = (n) => {
-  if (n.post) return `/app/post/${typeof n.post === 'object' ? n.post._id : n.post}`;
+  if (n.post) return `/app/post/${idOf(n.post)}`;
   if (n.type === 'follow' && n.actor) return `/app/profile/${n.actor.username}`;
+  if (n.type === 'reaction' && n.conversation) return `/app/messages/${idOf(n.conversation)}`;
   if (n.type === 'message') return '/app/messages';
   return '#';
 };
