@@ -16,9 +16,17 @@ export const formatCount = (n = 0) => {
   return `${(n / 1_000_000).toFixed(1)}M`;
 };
 
-/** Resolve a possibly-relative upload URL against the API origin. */
+// Server origin for locally-stored uploads: VITE_API_URL minus the trailing
+// "/api". Empty in dev (Vite proxy forwards /uploads to the backend).
+const MEDIA_BASE = (import.meta.env.VITE_API_URL || '')
+  .replace(/\/api\/?$/, '')
+  .replace(/\/$/, '');
+
+/** Resolve a possibly-relative upload URL against the backend origin. */
 export const resolveMedia = (url = '') => {
   if (!url) return '';
   if (url.startsWith('http') || url.startsWith('data:')) return url;
-  return url; // Vite proxy forwards /uploads in dev; same-origin in prod
+  // Relative path from local/mock storage — resolve against the backend so it
+  // works on a split deploy (frontend and backend on different origins).
+  return `${MEDIA_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
 };
