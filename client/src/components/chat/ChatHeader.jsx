@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { FiArrowLeft, FiUsers } from 'react-icons/fi';
+import toast from 'react-hot-toast';
+import { FiArrowLeft, FiUsers, FiPhone, FiVideo } from 'react-icons/fi';
 import Avatar from '@/components/ui/Avatar';
 import { useSocket } from '@/context/SocketContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,9 +16,11 @@ export default function ChatHeader({ conversation, onBack }) {
   const online = other ? isOnline(other._id) : false;
   const memberCount = conversation.members?.length ?? 0;
 
+  const comingSoon = () => toast('Calls are coming soon', { icon: '📞' });
+
   return (
-    <header className="flex items-center gap-3 border-b border-line bg-surface px-4 py-3">
-      <button onClick={onBack} className="grid h-9 w-9 place-items-center rounded-lg text-content hover:bg-surface-2 lg:hidden" aria-label="Back">
+    <header className="flex items-center gap-3 border-b border-line bg-surface px-3 py-2.5 sm:px-4 sm:py-3">
+      <button onClick={onBack} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-content hover:bg-surface-2 lg:hidden" aria-label="Back">
         <FiArrowLeft />
       </button>
 
@@ -45,6 +48,23 @@ export default function ChatHeader({ conversation, onBack }) {
         <p className="text-xs text-muted">
           {isGroup ? `${memberCount} members` : online ? 'Active now' : 'Offline'}
         </p>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-0.5">
+        <button
+          onClick={comingSoon}
+          className="grid h-9 w-9 place-items-center rounded-lg text-content transition hover:bg-surface-2"
+          aria-label="Voice call"
+        >
+          <FiPhone size={18} />
+        </button>
+        <button
+          onClick={comingSoon}
+          className="grid h-9 w-9 place-items-center rounded-lg text-content transition hover:bg-surface-2"
+          aria-label="Video call"
+        >
+          <FiVideo size={18} />
+        </button>
       </div>
     </header>
   );

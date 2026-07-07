@@ -43,6 +43,22 @@ export default function MessageList({ conversationId, conversation, onReply }) {
     setAtBottom(true);
   }, []);
 
+  // Keep the latest message pinned when the on-screen keyboard opens/closes
+  // (the visual viewport resizes) — only if the user was already at the bottom.
+  const atBottomRef = useRef(true);
+  useEffect(() => {
+    atBottomRef.current = atBottom;
+  }, [atBottom]);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return undefined;
+    const onResize = () => {
+      if (atBottomRef.current) requestAnimationFrame(() => scrollToBottom('auto'));
+    };
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
+  }, [scrollToBottom]);
+
   // Auto-scroll only when the user is already near the bottom or the new
   // message is their own — otherwise keep their scroll position and surface a
   // "new messages" pill instead of yanking them down.

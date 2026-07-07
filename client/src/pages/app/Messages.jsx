@@ -4,12 +4,14 @@ import { FiMessageCircle } from 'react-icons/fi';
 import ConversationList from '@/components/chat/ConversationList';
 import ChatWindow from '@/components/chat/ChatWindow';
 import NewChatModal from '@/components/chat/NewChatModal';
+import useMobileViewportHeight from '@/hooks/useMobileViewportHeight';
 import { cn } from '@/lib/cn';
 
 export default function Messages() {
   const { conversationId } = useParams();
   const navigate = useNavigate();
   const [newOpen, setNewOpen] = useState(false);
+  const vvHeight = useMobileViewportHeight();
 
   const select = (id) => navigate(`/app/messages/${id}`);
 
@@ -19,8 +21,11 @@ export default function Messages() {
         // Mobile: full screen with a thread open (header+nav hidden); otherwise
         // fit between the mobile header and bottom nav. Desktop: minus top bar.
         conversationId ? 'h-[100dvh]' : 'h-[calc(100dvh-8rem)]',
-        'lg:h-[calc(100vh-4rem)]'
+        'overflow-hidden lg:h-[calc(100vh-4rem)]'
       )}
+      // With a thread open on mobile, bind to the visual viewport so the
+      // composer stays above the keyboard (null on desktop → CSS class wins).
+      style={conversationId && vvHeight ? { height: vvHeight } : undefined}
     >
       <div className="mx-auto flex h-full max-w-6xl overflow-hidden border-x border-line bg-surface">
         {/* Conversation list — hidden on mobile when a chat is open */}

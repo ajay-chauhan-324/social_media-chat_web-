@@ -1,22 +1,20 @@
-import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiHome, FiSearch, FiPlus, FiMessageCircle, FiUser } from 'react-icons/fi';
-import CreatePostSheet from '@/components/feed/CreatePostSheet';
+import { FiHome, FiSearch, FiMessageCircle, FiBell, FiUser } from 'react-icons/fi';
 import { useNavBadges } from '@/hooks/useNavBadges';
 import { cn } from '@/lib/cn';
 
 /**
  * Instagram-style bottom navigation for mobile (hidden on lg+ where the
  * desktop Sidebar takes over). Blurred glass bar, animated active indicator,
- * unread badge on Chats, and iOS safe-area padding so it clears the home bar.
+ * unread badges, and iOS safe-area padding so it clears the home bar.
  */
 
 const TABS = [
   { to: '/app', label: 'Home', icon: FiHome, end: true },
   { to: '/app/search', label: 'Search', icon: FiSearch },
-  { type: 'create' },
   { to: '/app/messages', label: 'Chats', icon: FiMessageCircle, badge: 'messages' },
+  { to: '/app/notifications', label: 'Notifications', icon: FiBell, badge: 'notifications' },
   { to: '/app/profile', label: 'Profile', icon: FiUser, end: true },
 ];
 
@@ -58,47 +56,21 @@ function TabLink({ to, label, icon: Icon, end, badge = 0 }) {
   );
 }
 
-function CreateButton({ onClick }) {
-  return (
-    <div className="flex flex-1 items-center justify-center">
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label="Create post"
-        className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-gradient text-white shadow-glow transition-transform active:scale-90"
-      >
-        <FiPlus size={24} strokeWidth={2.6} />
-      </button>
-    </div>
-  );
-}
-
 export default function MobileNav() {
-  const [createOpen, setCreateOpen] = useState(false);
-  const { unreadMessages } = useNavBadges();
+  const { unreadMessages, unreadNotifications } = useNavBadges();
+  const badgeFor = (key) =>
+    key === 'messages' ? unreadMessages : key === 'notifications' ? unreadNotifications : 0;
 
   return (
-    <>
-      <nav
-        aria-label="Primary"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/80 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
-      >
-        <div className="mx-auto flex h-16 max-w-md items-stretch justify-around px-1">
-          {TABS.map((tab) =>
-            tab.type === 'create' ? (
-              <CreateButton key="create" onClick={() => setCreateOpen(true)} />
-            ) : (
-              <TabLink
-                key={tab.to}
-                {...tab}
-                badge={tab.badge === 'messages' ? unreadMessages : 0}
-              />
-            )
-          )}
-        </div>
-      </nav>
-
-      <CreatePostSheet open={createOpen} onClose={() => setCreateOpen(false)} />
-    </>
+    <nav
+      aria-label="Primary"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/80 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
+    >
+      <div className="mx-auto flex h-16 max-w-md items-stretch justify-around px-1">
+        {TABS.map((tab) => (
+          <TabLink key={tab.to} {...tab} badge={badgeFor(tab.badge)} />
+        ))}
+      </div>
+    </nav>
   );
 }
