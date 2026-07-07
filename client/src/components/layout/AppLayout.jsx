@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useDispatch } from 'react-redux';
-import { FiMenu, FiSearch, FiLogOut, FiX } from 'react-icons/fi';
+import { FiSearch, FiLogOut, FiX } from 'react-icons/fi';
 import Sidebar from './Sidebar';
+import MobileHeader from './MobileHeader';
+import MobileNav from './MobileNav';
 import Avatar from '@/components/ui/Avatar';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import Button from '@/components/ui/Button';
@@ -69,17 +71,9 @@ export default function AppLayout() {
       </AnimatePresence>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-surface/80 px-4 backdrop-blur-xl">
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="grid h-10 w-10 place-items-center rounded-xl border border-line text-content lg:hidden"
-            aria-label="Open menu"
-          >
-            <FiMenu />
-          </button>
-
-          <form onSubmit={submitSearch} className="relative hidden max-w-md flex-1 sm:block">
+        {/* Desktop top bar (mobile uses <MobileHeader/> below) */}
+        <header className="sticky top-0 z-30 hidden h-16 items-center gap-3 border-b border-line bg-surface/80 px-4 backdrop-blur-xl lg:flex">
+          <form onSubmit={submitSearch} className="relative max-w-md flex-1">
             <FiSearch className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
             <input
               value={searchTerm}
@@ -91,16 +85,6 @@ export default function AppLayout() {
           </form>
 
           <div className="ml-auto flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="sm:hidden"
-              onClick={() => navigate('/app/search')}
-              title="Search"
-              aria-label="Search"
-            >
-              <FiSearch size={18} />
-            </Button>
             <ThemeToggle />
             <Button variant="ghost" size="icon" onClick={handleLogout} title="Log out">
               <FiLogOut size={18} />
@@ -109,10 +93,17 @@ export default function AppLayout() {
           </div>
         </header>
 
-        <main className="flex-1">
+        {/* Mobile header — sticky, blurred, hides on scroll */}
+        <MobileHeader onOpenMenu={() => setMobileOpen(true)} />
+
+        {/* pb clears the fixed bottom nav (+ iOS home bar) on mobile only */}
+        <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
           <Outlet />
         </main>
       </div>
+
+      {/* Instagram-style bottom navigation (mobile only) */}
+      <MobileNav />
 
       {/* Floating AI assistant — available on every app page */}
       <AIAssistant />

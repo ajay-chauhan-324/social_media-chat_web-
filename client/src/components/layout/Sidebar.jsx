@@ -14,8 +14,7 @@ import {
 } from 'react-icons/fi';
 import Logo from '@/components/ui/Logo';
 import { cn } from '@/lib/cn';
-import { useConversations } from '@/features/chat/useChat';
-import { useUnreadNotifications } from '@/features/notifications/useNotifications';
+import { useNavBadges } from '@/hooks/useNavBadges';
 import { useAuth } from '@/hooks/useAuth';
 
 const NAV = [
@@ -31,11 +30,9 @@ const NAV = [
 ];
 
 export default function Sidebar({ onNavigate }) {
-  const { data: conversations } = useConversations();
-  const { data: unreadNotifs } = useUnreadNotifications();
+  const { unreadMessages, unreadNotifications } = useNavBadges();
   const { user } = useAuth();
-  const unreadMessages = (conversations || []).reduce((sum, c) => sum + (c.unreadCount || 0), 0);
-  const badges = { messages: unreadMessages, notifications: unreadNotifs || 0 };
+  const badges = { messages: unreadMessages, notifications: unreadNotifications };
 
   return (
     <aside className="flex h-full w-64 flex-col border-r border-line bg-surface">

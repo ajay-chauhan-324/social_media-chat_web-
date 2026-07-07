@@ -53,7 +53,7 @@ export default function AIAssistant() {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.4, type: 'spring' }}
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-5 right-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-brand-gradient text-white shadow-glow transition active:scale-95"
+        className="fixed bottom-24 right-4 z-40 grid h-14 w-14 place-items-center rounded-full bg-brand-gradient text-white shadow-glow transition active:scale-95 lg:bottom-5 lg:right-5"
         aria-label="Open AI assistant"
       >
         <AnimatePresence mode="wait" initial={false}>
@@ -70,7 +70,7 @@ export default function AIAssistant() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.96 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className="fixed bottom-24 right-5 z-40 flex h-[560px] max-h-[calc(100vh-8rem)] w-[calc(100vw-2.5rem)] max-w-sm flex-col overflow-hidden rounded-3xl border border-line bg-surface shadow-soft"
+            className="fixed bottom-40 right-4 z-40 flex h-[560px] max-h-[calc(100vh-12rem)] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-3xl border border-line bg-surface shadow-soft lg:bottom-24 lg:right-5 lg:max-h-[calc(100vh-8rem)]"
           >
             <header className="flex items-center gap-2.5 border-b border-line bg-brand-gradient px-4 py-3 text-white">
               <span className="grid h-9 w-9 place-items-center rounded-full bg-white/20">

@@ -10,7 +10,7 @@ import { cn } from '@/lib/cn';
 const MAX_IMAGES = 4;
 const MAX_CHARS = 3000;
 
-export default function PostComposer({ compact = false }) {
+export default function PostComposer({ compact = false, onPosted }) {
   const { user } = useAuth();
   const createPost = useCreatePost();
   const fileRef = useRef(null);
@@ -48,6 +48,7 @@ export default function PostComposer({ compact = false }) {
     files.forEach((f) => fd.append('images', f.file));
     await createPost.mutateAsync(fd);
     reset();
+    onPosted?.();
   };
 
   const over = content.length > MAX_CHARS;
