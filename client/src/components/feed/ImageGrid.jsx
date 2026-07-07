@@ -37,6 +37,7 @@ export default function ImageGrid({ images = [] }) {
               src={resolveMedia(img.url)}
               alt=""
               loading="lazy"
+              decoding="async"
               className="h-full max-h-[520px] w-full object-cover transition duration-300 hover:scale-[1.02]"
             />
           </button>

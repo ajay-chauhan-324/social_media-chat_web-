@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
 import { FiMoreVertical, FiEdit2, FiTrash2, FiCornerUpLeft, FiCheck } from 'react-icons/fi';
 import { RiPushpin2Fill, RiCheckDoubleFill, RiCheckLine } from 'react-icons/ri';
@@ -56,7 +56,7 @@ function BubbleMenu({ isMine, canEdit, onEdit, onReply, onPin, onDelete }) {
   );
 }
 
-export default function MessageBubble({ message, isMine, isGroup, showAvatar, seen, onReply }) {
+function MessageBubble({ message, isMine, isGroup, showAvatar, seen, onReply }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.content);
   const edit = useEditMessage();
@@ -127,7 +127,7 @@ export default function MessageBubble({ message, isMine, isGroup, showAvatar, se
                 {message.images?.length > 0 && (
                   <div className={cn('grid gap-1', message.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1', message.content && 'mb-1.5')}>
                     {message.images.map((img, i) => (
-                      <img key={i} src={resolveMedia(img.url)} alt="" className="max-h-60 rounded-lg object-cover" />
+                      <img key={i} src={resolveMedia(img.url)} alt="" loading="lazy" decoding="async" className="max-h-60 rounded-lg object-cover" />
                     ))}
                   </div>
                 )}
@@ -154,3 +154,8 @@ export default function MessageBubble({ message, isMine, isGroup, showAvatar, se
     </div>
   );
 }
+
+// Memoized: in a long conversation, only the changed/new bubble re-renders
+// when a message arrives (React Query structural sharing keeps prior message
+// objects stable, and onReply is a stable setState from ChatWindow).
+export default memo(MessageBubble);

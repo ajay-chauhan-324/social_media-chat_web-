@@ -1,1 +1,0 @@
-import{j as n,n as e}from"./index-DX8IpaUu.js";function d({as:a="div",className:s,hover:r=!1,children:t,...o}){return n.jsx(a,{className:e("card p-5",r&&"transition-all duration-300 hover:-translate-y-1 hover:shadow-soft",s),...o,children:t})}export{d as C};

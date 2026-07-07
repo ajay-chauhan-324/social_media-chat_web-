@@ -84,7 +84,7 @@ export default function MobileNav() {
         className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/80 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
       >
         <div className="mx-auto flex h-16 max-w-md items-stretch justify-around px-1">
-          {TABS.map((tab, i) =>
+          {TABS.map((tab) =>
             tab.type === 'create' ? (
               <CreateButton key="create" onClick={() => setCreateOpen(true)} />
             ) : (

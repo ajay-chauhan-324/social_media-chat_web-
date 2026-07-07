@@ -1,1 +1,0 @@
-const e={all:["posts"],feed:()=>["posts","feed"],explore:()=>["posts","explore"],bookmarks:()=>["posts","bookmarks"],user:s=>["posts","user",s],hashtag:s=>["posts","hashtag",s],detail:s=>["post",s],comments:s=>["comments",s],replies:s=>["replies",s],trending:["trending"],suggestions:["suggestions"]};export{e as p};

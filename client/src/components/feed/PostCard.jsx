@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -9,8 +9,6 @@ import {
   FiShare2,
   FiMoreHorizontal,
   FiTrash2,
-  FiEdit2,
-  FiCheck,
 } from 'react-icons/fi';
 import { RiVerifiedBadgeFill } from 'react-icons/ri';
 import Avatar from '@/components/ui/Avatar';
@@ -85,7 +83,7 @@ function ActionButton({ active, activeColor, icon: Icon, count, onClick, label, 
   );
 }
 
-export default function PostCard({ post, showComments: initialShow = false }) {
+function PostCard({ post, showComments: initialShow = false }) {
   const like = useLikePost();
   const bookmark = useBookmarkPost();
   const del = useDeletePost();
@@ -172,3 +170,8 @@ export default function PostCard({ post, showComments: initialShow = false }) {
     </motion.article>
   );
 }
+
+// Memoized: React Query's structural sharing keeps unchanged posts
+// referentially stable, so cards skip re-render when siblings update
+// (e.g. loading the next page, liking another post).
+export default memo(PostCard);

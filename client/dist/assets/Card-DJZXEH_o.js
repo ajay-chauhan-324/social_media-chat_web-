@@ -1,0 +1,1 @@
+import{j as n}from"./react-vendor-F8OAzczs.js";import{c as e}from"./index-DmU8DqrB.js";function c({as:a="div",className:r,hover:s=!1,children:o,...t}){return n.jsx(a,{className:e("card p-5",s&&"transition-all duration-300 hover:-translate-y-1 hover:shadow-soft",r),...t,children:o})}export{c as C};

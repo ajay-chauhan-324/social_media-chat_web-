@@ -22,7 +22,7 @@ export default function Avatar({ src, name = 'User', size = 'md', ring = false, 
       title={name}
     >
       {src ? (
-        <img src={src} alt={name} className="h-full w-full object-cover" loading="lazy" />
+        <img src={src} alt={name} className="h-full w-full object-cover" loading="lazy" decoding="async" />
       ) : (
         <span>{initials(name)}</span>
       )}
