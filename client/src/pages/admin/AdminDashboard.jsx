@@ -7,7 +7,6 @@ import {
   FiMessageSquare,
   FiActivity,
   FiFlag,
-  FiCpu,
   FiWifi,
 } from 'react-icons/fi';
 import { RiVerifiedBadgeFill } from 'react-icons/ri';
@@ -54,7 +53,6 @@ export default function AdminDashboard() {
     { icon: FiFileText, label: 'Total Posts', value: stats.content.posts, sub: `+${stats.content.postsToday} today`, tone: 'violet' },
     { icon: FiHeart, label: 'Total Likes', value: stats.content.likes, sub: `${formatCount(stats.content.comments)} comments`, tone: 'danger' },
     { icon: FiMessageSquare, label: 'Messages', value: stats.chat.messages, sub: `+${stats.chat.messagesToday} today`, tone: 'accent' },
-    { icon: FiCpu, label: 'AI Requests Today', value: stats.ai.requestsToday, sub: `${stats.ai.conversations} conversations`, tone: 'brand' },
     { icon: FiFlag, label: 'Pending Reports', value: stats.reports.pending, sub: `${stats.reports.total} total`, tone: 'warning' },
     { icon: FiActivity, label: 'Banned Users', value: stats.users.banned, sub: `${stats.users.newToday} new today`, tone: 'danger' },
   ];

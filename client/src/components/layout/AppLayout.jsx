@@ -11,7 +11,6 @@ import Avatar from '@/components/ui/Avatar';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
-import AIAssistant from '@/components/ai/AIAssistant';
 import { useAuth } from '@/hooks/useAuth';
 import { logoutThunk } from '@/features/auth/authSlice';
 
@@ -136,9 +135,6 @@ export default function AppLayout() {
 
       {/* Instagram-style bottom navigation (mobile only, hidden in a thread) */}
       {!inThread && <MobileNav />}
-
-      {/* Floating AI assistant — available on every app page */}
-      <AIAssistant />
     </div>
   );
 }

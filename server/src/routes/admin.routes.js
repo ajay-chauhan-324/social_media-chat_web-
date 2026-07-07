@@ -23,6 +23,4 @@ router.delete('/comments/:id', adminController.deleteComment);
 router.get('/reports', adminController.listReports);
 router.patch('/reports/:id', adminController.resolveReport);
 
-router.get('/ai', adminController.getAiUsage);
-
 export default router;
