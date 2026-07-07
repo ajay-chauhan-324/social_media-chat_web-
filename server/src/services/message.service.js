@@ -11,7 +11,7 @@ const populateMessage = (query) =>
   query
     .populate('sender', SENDER_FIELDS)
     .populate({ path: 'replyTo', populate: { path: 'sender', select: 'name username' } })
-    .populate('reactions.user', 'name username');
+    .populate('reactions.user', 'name username avatar');
 
 export const sendMessage = async (conversationId, senderId, { content = '', replyTo }, files = []) => {
   await assertMember(conversationId, senderId);

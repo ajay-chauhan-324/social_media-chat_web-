@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
-import { FiMoreVertical, FiEdit2, FiTrash2, FiCornerUpLeft, FiCheck } from 'react-icons/fi';
+import { FiMoreVertical, FiEdit2, FiTrash2, FiCornerUpLeft, FiCheck, FiUsers } from 'react-icons/fi';
 import { RiPushpin2Fill, RiCheckDoubleFill, RiCheckLine } from 'react-icons/ri';
 import Avatar from '@/components/ui/Avatar';
 import Modal from '@/components/ui/Modal';
@@ -71,6 +71,7 @@ function MessageBubble({ message, isMine, isGroup, showAvatar, seen, onReply, my
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.content);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [whoOpen, setWhoOpen] = useState(false);
   const [preview, setPreview] = useState(null);
   const edit = useEditMessage();
   const del = useDeleteMessage();
@@ -114,6 +115,9 @@ function MessageBubble({ message, isMine, isGroup, showAvatar, seen, onReply, my
       : []),
     ...(isMine
       ? [{ icon: FiTrash2, label: 'Delete', danger: true, onClick: () => del.mutate(message._id) }]
+      : []),
+    ...(reactionList.length
+      ? [{ icon: FiUsers, label: 'See who reacted', onClick: () => setWhoOpen(true) }]
       : []),
   ];
 
@@ -312,6 +316,22 @@ function MessageBubble({ message, isMine, isGroup, showAvatar, seen, onReply, my
             >
               <a.icon size={18} /> {a.label}
             </button>
+          ))}
+        </div>
+      </Modal>
+
+      {/* Who reacted */}
+      <Modal open={whoOpen} onClose={() => setWhoOpen(false)} title="Reactions" size="sm">
+        <div className="flex flex-col gap-0.5">
+          {(message.reactions || []).map((r, i) => (
+            <div key={i} className="flex items-center gap-3 rounded-xl px-2 py-2">
+              <Avatar src={r.user?.avatar} name={r.user?.name} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-content">{r.user?.name || 'User'}</p>
+                {r.user?.username && <p className="truncate text-xs text-muted">@{r.user.username}</p>}
+              </div>
+              <span className="text-xl">{r.emoji}</span>
+            </div>
           ))}
         </div>
       </Modal>
