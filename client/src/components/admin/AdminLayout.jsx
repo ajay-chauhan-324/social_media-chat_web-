@@ -10,7 +10,6 @@ import {
   FiFlag,
   FiCpu,
   FiMenu,
-  FiX,
   FiArrowLeft,
   FiLogOut,
 } from 'react-icons/fi';

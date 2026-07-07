@@ -44,6 +44,18 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* Visible keyboard focus for everything (mouse/touch focus stays clean).
+     Form fields keep their own focus ring, so exclude them here. */
+  :focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+  }
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+  }
+
   ::selection {
     @apply bg-brand-600/20;
   }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import ChatHeader from './ChatHeader';
 import MessageList from './MessageList';
 import MessageComposer from './MessageComposer';
@@ -19,7 +19,6 @@ export default function ChatWindow({ conversationId, onBack }) {
   const { data: msgData } = useMessages(conversationId);
 
   // Announce read on open and whenever new messages come in.
-  const lastCount = useRef(0);
   useEffect(() => {
     if (!conversationId) return;
     emit('message:read', { conversationId });
