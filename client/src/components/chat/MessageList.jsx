@@ -1,8 +1,12 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiChevronDown } from 'react-icons/fi';
 import MessageBubble from './MessageBubble';
 import Spinner from '@/components/ui/Spinner';
 import { useMessages, flattenMessages } from '@/features/chat/useChat';
 import { useAuth } from '@/hooks/useAuth';
+
+const NEAR_BOTTOM_PX = 120;
 
 const dayLabel = (date) => {
   const d = new Date(date);
@@ -21,6 +25,8 @@ export default function MessageList({ conversationId, conversation, onReply }) {
   const bottomRef = useRef(null);
   const containerRef = useRef(null);
   const lastIdRef = useRef(null);
+  const [atBottom, setAtBottom] = useState(true);
+  const [newCount, setNewCount] = useState(0);
 
   // The other member's lastReadAt (private seen receipts).
   const otherLastReadAt = useMemo(() => {
@@ -31,19 +37,41 @@ export default function MessageList({ conversationId, conversation, onReply }) {
     return other?.lastReadAt ? new Date(other.lastReadAt) : null;
   }, [conversation, user?._id]);
 
-  // Auto-scroll to bottom when a new message arrives.
+  const scrollToBottom = useCallback((behavior = 'smooth') => {
+    bottomRef.current?.scrollIntoView({ behavior });
+    setNewCount(0);
+    setAtBottom(true);
+  }, []);
+
+  // Auto-scroll only when the user is already near the bottom or the new
+  // message is their own — otherwise keep their scroll position and surface a
+  // "new messages" pill instead of yanking them down.
   useEffect(() => {
     const last = messages[messages.length - 1];
-    if (last && last._id !== lastIdRef.current) {
-      lastIdRef.current = last._id;
-      requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }));
-    }
-  }, [messages]);
+    if (!last || last._id === lastIdRef.current) return;
+    const isFirstLoad = lastIdRef.current === null;
+    lastIdRef.current = last._id;
 
-  // Load older when scrolled to top.
+    const mine = String(last.sender._id || last.sender) === String(user?._id);
+    if (isFirstLoad || atBottom || mine) {
+      requestAnimationFrame(() => scrollToBottom(isFirstLoad ? 'auto' : 'smooth'));
+    } else {
+      setNewCount((c) => c + 1);
+    }
+  }, [messages, atBottom, user?._id, scrollToBottom]);
+
   const onScroll = (e) => {
-    if (e.target.scrollTop < 80 && hasNextPage && !isFetchingNextPage) {
-      const prevHeight = e.target.scrollHeight;
+    const el = e.target;
+
+    // Track proximity to the bottom for the scroll-to-bottom pill.
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const near = distance < NEAR_BOTTOM_PX;
+    setAtBottom(near);
+    if (near) setNewCount(0);
+
+    // Load older messages when scrolled near the top, preserving position.
+    if (el.scrollTop < 80 && hasNextPage && !isFetchingNextPage) {
+      const prevHeight = el.scrollHeight;
       fetchNextPage().then(() => {
         requestAnimationFrame(() => {
           if (containerRef.current)
@@ -75,43 +103,67 @@ export default function MessageList({ conversationId, conversation, onReply }) {
   let lastDay = null;
 
   return (
-    <div ref={containerRef} onScroll={onScroll} className="flex-1 space-y-1 overflow-y-auto px-4 py-4">
-      {isFetchingNextPage && (
-        <div className="flex justify-center py-2">
-          <Spinner size={18} className="text-brand-600" />
-        </div>
-      )}
-      {messages.map((m, i) => {
-        const isMine = String(m.sender._id || m.sender) === String(user?._id);
-        const prev = messages[i - 1];
-        const showAvatar = !prev || String(prev.sender._id || prev.sender) !== String(m.sender._id || m.sender);
-        const seen = isMine && otherLastReadAt && otherLastReadAt >= new Date(m.createdAt);
-
-        const day = dayLabel(m.createdAt);
-        const showDay = day !== lastDay;
-        lastDay = day;
-
-        return (
-          <div key={m._id}>
-            {showDay && (
-              <div className="my-3 flex justify-center">
-                <span className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-muted">
-                  {day}
-                </span>
-              </div>
-            )}
-            <MessageBubble
-              message={m}
-              isMine={isMine}
-              isGroup={isGroup}
-              showAvatar={showAvatar}
-              seen={seen}
-              onReply={onReply}
-            />
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <div ref={containerRef} onScroll={onScroll} className="flex-1 space-y-1 overflow-y-auto px-4 py-4">
+        {isFetchingNextPage && (
+          <div className="flex justify-center py-2">
+            <Spinner size={18} className="text-brand-600" />
           </div>
-        );
-      })}
-      <div ref={bottomRef} />
+        )}
+        {messages.map((m, i) => {
+          const isMine = String(m.sender._id || m.sender) === String(user?._id);
+          const prev = messages[i - 1];
+          const showAvatar =
+            !prev || String(prev.sender._id || prev.sender) !== String(m.sender._id || m.sender);
+          const seen = isMine && otherLastReadAt && otherLastReadAt >= new Date(m.createdAt);
+
+          const day = dayLabel(m.createdAt);
+          const showDay = day !== lastDay;
+          lastDay = day;
+
+          return (
+            <div key={m._id}>
+              {showDay && (
+                <div className="my-3 flex justify-center">
+                  <span className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-muted">
+                    {day}
+                  </span>
+                </div>
+              )}
+              <MessageBubble
+                message={m}
+                isMine={isMine}
+                isGroup={isGroup}
+                showAvatar={showAvatar}
+                seen={seen}
+                onReply={onReply}
+              />
+            </div>
+          );
+        })}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Floating scroll-to-bottom button with new-message count */}
+      <AnimatePresence>
+        {!atBottom && (
+          <motion.button
+            initial={{ opacity: 0, y: 8, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.9 }}
+            onClick={() => scrollToBottom()}
+            aria-label="Scroll to latest messages"
+            className="absolute bottom-3 right-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-line bg-surface text-content shadow-soft"
+          >
+            <FiChevronDown size={20} />
+            {newCount > 0 && (
+              <span className="absolute -top-1.5 left-1/2 grid h-5 min-w-[20px] -translate-x-1/2 place-items-center rounded-full bg-brand-600 px-1.5 text-[10px] font-bold leading-none text-white">
+                {newCount > 99 ? '99+' : newCount}
+              </span>
+            )}
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

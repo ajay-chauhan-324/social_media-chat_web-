@@ -14,7 +14,14 @@ export default function Messages() {
   const select = (id) => navigate(`/app/messages/${id}`);
 
   return (
-    <div className="h-[calc(100vh-4rem)]">
+    <div
+      className={cn(
+        // Mobile: full screen with a thread open (header+nav hidden); otherwise
+        // fit between the mobile header and bottom nav. Desktop: minus top bar.
+        conversationId ? 'h-[100dvh]' : 'h-[calc(100dvh-8rem)]',
+        'lg:h-[calc(100vh-4rem)]'
+      )}
+    >
       <div className="mx-auto flex h-full max-w-6xl overflow-hidden border-x border-line bg-surface">
         {/* Conversation list — hidden on mobile when a chat is open */}
         <div className={cn('w-full shrink-0 sm:w-80 md:w-96', conversationId && 'hidden sm:block')}>

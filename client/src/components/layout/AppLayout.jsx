@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useMatch } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { cn } from '@/lib/cn';
 import { useDispatch } from 'react-redux';
 import { FiSearch, FiLogOut, FiX } from 'react-icons/fi';
 import Sidebar from './Sidebar';
@@ -19,6 +20,11 @@ export default function AppLayout() {
   const { user } = useAuth();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // An open conversation is an immersive full-screen view on mobile: hide the
+  // app header + bottom nav so the chat (with its own header) owns the screen
+  // and the composer isn't covered. No effect on desktop (sidebar layout).
+  const inThread = Boolean(useMatch('/app/messages/:conversationId'));
 
   const handleLogout = async () => {
     await dispatch(logoutThunk());
@@ -93,17 +99,22 @@ export default function AppLayout() {
           </div>
         </header>
 
-        {/* Mobile header — sticky, blurred, hides on scroll */}
-        <MobileHeader onOpenMenu={() => setMobileOpen(true)} />
+        {/* Mobile header — sticky, blurred, hides on scroll (hidden in a thread) */}
+        {!inThread && <MobileHeader onOpenMenu={() => setMobileOpen(true)} />}
 
         {/* pb clears the fixed bottom nav (+ iOS home bar) on mobile only */}
-        <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
+        <main
+          className={cn(
+            'flex-1',
+            !inThread && 'pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0'
+          )}
+        >
           <Outlet />
         </main>
       </div>
 
-      {/* Instagram-style bottom navigation (mobile only) */}
-      <MobileNav />
+      {/* Instagram-style bottom navigation (mobile only, hidden in a thread) */}
+      {!inThread && <MobileNav />}
 
       {/* Floating AI assistant — available on every app page */}
       <AIAssistant />

@@ -59,7 +59,7 @@ export default function MessageComposer({ conversationId, replyTo, onClearReply 
   };
 
   return (
-    <div className="border-t border-line bg-surface px-3 py-2.5">
+    <div className="border-t border-line bg-surface px-3 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
       {replyTo && (
         <div className="mb-2 flex items-center justify-between rounded-lg border-l-2 border-brand-500 bg-surface-2 px-3 py-1.5 text-sm">
           <div className="min-w-0">

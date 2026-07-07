@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiX } from 'react-icons/fi';
+import Lightbox from '@/components/ui/Lightbox';
 import { cn } from '@/lib/cn';
 import { resolveMedia } from '@/lib/format';
 
@@ -44,34 +42,7 @@ export default function ImageGrid({ images = [] }) {
         ))}
       </div>
 
-      {createPortal(
-        <AnimatePresence>
-          {lightbox && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setLightbox(null)}
-              className="fixed inset-0 z-[70] grid place-items-center bg-black/90 p-4"
-            >
-              <button
-                className="absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white"
-                aria-label="Close"
-              >
-                <FiX size={22} />
-              </button>
-              <motion.img
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-                src={lightbox}
-                alt=""
-                className="max-h-[90vh] max-w-full rounded-xl object-contain"
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
+      <Lightbox src={lightbox} onClose={() => setLightbox(null)} />
     </>
   );
 }
