@@ -1,13 +1,32 @@
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { FiArrowLeft, FiUsers, FiPhone, FiVideo } from 'react-icons/fi';
+import { FiArrowLeft, FiUsers, FiPhone, FiVideo, FiMoreVertical, FiTrash2 } from 'react-icons/fi';
 import Avatar from '@/components/ui/Avatar';
 import { useSocket } from '@/context/SocketContext';
+import { useDeleteConversation } from '@/features/chat/useChat';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function ChatHeader({ conversation, onBack }) {
   const { isOnline } = useSocket();
   const { user } = useAuth();
+  const del = useDeleteConversation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const h = (e) => menuRef.current && !menuRef.current.contains(e.target) && setMenuOpen(false);
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  const deleteChat = () => {
+    setMenuOpen(false);
+    if (!window.confirm('Delete this conversation? This removes all messages for everyone and cannot be undone.'))
+      return;
+    del.mutate(conversation._id, { onSuccess: () => onBack?.() });
+  };
 
   const isGroup = conversation.type === 'group';
   const other = !isGroup
@@ -65,6 +84,30 @@ export default function ChatHeader({ conversation, onBack }) {
         >
           <FiVideo size={18} />
         </button>
+
+        <div ref={menuRef} className="relative">
+          <button
+            onClick={() => setMenuOpen((o) => !o)}
+            className="grid h-9 w-9 place-items-center rounded-lg text-content transition hover:bg-surface-2"
+            aria-label="Conversation options"
+          >
+            <FiMoreVertical size={18} />
+          </button>
+          {menuOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="absolute right-0 z-30 mt-1 w-44 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-soft"
+            >
+              <button
+                onClick={deleteChat}
+                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-danger transition hover:bg-surface-2"
+              >
+                <FiTrash2 size={15} /> Delete chat
+              </button>
+            </motion.div>
+          )}
+        </div>
       </div>
     </header>
   );

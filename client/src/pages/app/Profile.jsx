@@ -103,15 +103,18 @@ export default function Profile() {
                   </Button>
                 ) : (
                   <div className="flex gap-2">
-                    <Button
-                      variant="secondary"
-                      size="md"
-                      leftIcon={<FiMessageCircle />}
-                      loading={startPrivate.isPending}
-                      onClick={() => messageUser(user.username)}
-                    >
-                      Message
-                    </Button>
+                    {/* Messaging is follow-gated: show Message only once you follow. */}
+                    {user.isFollowing && (
+                      <Button
+                        variant="secondary"
+                        size="md"
+                        leftIcon={<FiMessageCircle />}
+                        loading={startPrivate.isPending}
+                        onClick={() => messageUser(user.username)}
+                      >
+                        Message
+                      </Button>
+                    )}
                     <FollowButton username={user.username} isFollowing={user.isFollowing} size="md" />
                   </div>
                 )}

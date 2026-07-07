@@ -23,6 +23,7 @@ router.get('/:id', convController.getConversation);
 router.post('/:id/read', convController.markRead);
 router.post('/:id/members', validate(addMembersSchema), convController.addMembers);
 router.delete('/:id/leave', convController.leaveGroup);
+router.delete('/:id', convController.deleteConversation);
 
 // Messages within a conversation
 router.get('/:id/messages', messageController.getMessages);

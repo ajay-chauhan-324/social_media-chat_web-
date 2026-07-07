@@ -1,36 +1,29 @@
 import { NavLink } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { FiBell, FiSettings } from 'react-icons/fi';
 import Logo from '@/components/ui/Logo';
 import Avatar from '@/components/ui/Avatar';
 import ThemeToggle from '@/components/ui/ThemeToggle';
-import useHideOnScroll from '@/hooks/useHideOnScroll';
 import { useNavBadges } from '@/hooks/useNavBadges';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/cn';
 
 /**
  * Instagram-style mobile header (hidden on lg+ where the desktop top bar
- * takes over). Sticky + blurred, slides up out of the way when scrolling
- * down and returns on scroll up. Left: logo. Right: notifications (with
- * badge), theme toggle, settings, and the avatar which opens the overflow
- * drawer (Explore, Bookmarks, AI Studio, admin, log out).
+ * takes over). Always-visible sticky bar with a blur + subtle shadow. Left:
+ * logo. Right: notifications (with badge), theme toggle, settings, and the
+ * avatar which opens the overflow drawer (Explore, Bookmarks, admin, log out).
  */
 
 const ICON_BTN =
   'grid h-10 w-10 place-items-center rounded-xl text-content transition hover:bg-surface-2';
 
 export default function MobileHeader({ onOpenMenu }) {
-  const hidden = useHideOnScroll();
   const { unreadNotifications } = useNavBadges();
   const { user } = useAuth();
 
   return (
-    <motion.header
-      initial={false}
-      animate={{ y: hidden ? '-100%' : 0 }}
-      transition={{ type: 'tween', duration: 0.25, ease: 'easeOut' }}
-      className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-surface/80 px-3 backdrop-blur-xl lg:hidden"
+    <header
+      className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-surface/80 px-3 shadow-sm backdrop-blur-xl lg:hidden"
     >
       <Logo to="/app" />
 
@@ -59,6 +52,6 @@ export default function MobileHeader({ onOpenMenu }) {
           <Avatar src={user?.avatar} name={user?.name} size="sm" ring />
         </button>
       </div>
-    </motion.header>
+    </header>
   );
 }

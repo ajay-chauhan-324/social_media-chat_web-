@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiMessageCircle } from 'react-icons/fi';
 import ConversationList from '@/components/chat/ConversationList';
@@ -14,6 +14,15 @@ export default function Messages() {
   const vvHeight = useMobileViewportHeight();
 
   const select = (id) => navigate(`/app/messages/${id}`);
+
+  // If the open conversation gets deleted (by us or the other member), leave it.
+  useEffect(() => {
+    const onDeleted = (e) => {
+      if (e.detail?.conversationId === conversationId) navigate('/app/messages');
+    };
+    window.addEventListener('conversation:deleted', onDeleted);
+    return () => window.removeEventListener('conversation:deleted', onDeleted);
+  }, [conversationId, navigate]);
 
   return (
     <div

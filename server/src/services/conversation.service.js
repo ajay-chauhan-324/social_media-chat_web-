@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
+import Follow from '../models/Follow.js';
 import ApiError from '../utils/ApiError.js';
 
 const MEMBER_FIELDS = 'name username avatar headline isVerified lastActiveAt';
@@ -44,6 +45,11 @@ export const getOrCreatePrivate = async (userId, otherUsername) => {
   const pairKey = Conversation.pairKeyFor(userId, other._id);
   let conv = await Conversation.findOne({ pairKey });
   if (!conv) {
+    // Messaging is follow-gated: you must follow someone to start a new chat.
+    // Existing conversations are always reachable (no lock-out).
+    const follows = await Follow.exists({ follower: userId, following: other._id });
+    if (!follows) throw ApiError.forbidden('Follow this user before messaging them');
+
     conv = await Conversation.create({
       type: 'private',
       pairKey,
@@ -122,6 +128,15 @@ export const addMembers = async (conversationId, userId, memberUsernames = []) =
   await conv.save();
   const populated = await populateConv(Conversation.findById(conv._id));
   return decorate(populated, userId);
+};
+
+/** Delete a conversation and all its messages. Any member may delete it. */
+export const deleteConversation = async (conversationId, userId) => {
+  const conv = await assertMember(conversationId, userId);
+  const ids = conv.members.map((m) => String(m.user._id || m.user));
+  await Message.deleteMany({ conversation: conv._id });
+  await Conversation.findByIdAndDelete(conv._id);
+  return { conversationId: String(conversationId), memberIds: ids };
 };
 
 export const leaveGroup = async (conversationId, userId) => {

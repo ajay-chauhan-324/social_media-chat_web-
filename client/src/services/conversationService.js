@@ -11,6 +11,7 @@ const conversationService = {
   addMembers: (id, usernames) =>
     api.post(`/conversations/${id}/members`, { usernames }).then((r) => r.data.data.conversation),
   leave: (id) => api.delete(`/conversations/${id}/leave`).then((r) => r.data.data),
+  remove: (id) => api.delete(`/conversations/${id}`).then((r) => r.data.data),
   pinned: (id) => api.get(`/conversations/${id}/pinned`).then((r) => r.data.data.messages),
   search: (id, q) =>
     api.get(`/conversations/${id}/search`, { params: { q } }).then((r) => r.data.data.messages),

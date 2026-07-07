@@ -51,3 +51,10 @@ export const leaveGroup = asyncHandler(async (req, res) => {
   const data = await convService.leaveGroup(req.params.id, req.user.id);
   return ApiResponse.ok(res, data, 'Left group');
 });
+
+export const deleteConversation = asyncHandler(async (req, res) => {
+  const { conversationId, memberIds } = await convService.deleteConversation(req.params.id, req.user.id);
+  // Tell every member (incl. the deleter's other tabs) to drop it from the UI.
+  emitToUsers(memberIds, 'conversation:deleted', { conversationId });
+  return ApiResponse.ok(res, { conversationId }, 'Conversation deleted');
+});

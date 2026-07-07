@@ -86,6 +86,22 @@ export const useCreateGroup = () => {
   });
 };
 
+/** Delete a whole conversation (both members lose it). Updates caches instantly. */
+export const useDeleteConversation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => conversationService.remove(id),
+    onSuccess: ({ conversationId }) => {
+      qc.setQueryData(chatKeys.conversations, (list) =>
+        list?.filter((c) => c._id !== conversationId)
+      );
+      qc.removeQueries({ queryKey: chatKeys.messages(conversationId) });
+      qc.removeQueries({ queryKey: ['conversation', conversationId] });
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
+  });
+};
+
 /** Mark a conversation read locally + on server, and clear its unread badge. */
 export const useMarkRead = () => {
   const qc = useQueryClient();

@@ -118,6 +118,15 @@ export function SocketProvider({ children }) {
     socket.on('conversation:new', () => {
       qc.invalidateQueries({ queryKey: chatKeys.conversations });
     });
+    socket.on('conversation:deleted', ({ conversationId }) => {
+      qc.setQueryData(chatKeys.conversations, (list) =>
+        list?.filter((c) => c._id !== conversationId)
+      );
+      qc.removeQueries({ queryKey: chatKeys.messages(conversationId) });
+      qc.removeQueries({ queryKey: ['conversation', conversationId] });
+      // Let an open thread bounce back to the list (handled in Messages).
+      window.dispatchEvent(new CustomEvent('conversation:deleted', { detail: { conversationId } }));
+    });
 
     // ── Notifications ──
     socket.on('notification:new', () => {
