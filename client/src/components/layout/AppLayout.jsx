@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Outlet, useNavigate, useMatch } from 'react-router-dom';
+import { useState, Suspense } from 'react';
+import { Outlet, useNavigate, useMatch, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/cn';
 import { useDispatch } from 'react-redux';
@@ -10,6 +10,7 @@ import MobileNav from './MobileNav';
 import Avatar from '@/components/ui/Avatar';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import Button from '@/components/ui/Button';
+import Spinner from '@/components/ui/Spinner';
 import AIAssistant from '@/components/ai/AIAssistant';
 import { useAuth } from '@/hooks/useAuth';
 import { logoutThunk } from '@/features/auth/authSlice';
@@ -25,6 +26,7 @@ export default function AppLayout() {
   // app header + bottom nav so the chat (with its own header) owns the screen
   // and the composer isn't covered. No effect on desktop (sidebar layout).
   const inThread = Boolean(useMatch('/app/messages/:conversationId'));
+  const location = useLocation();
 
   const handleLogout = async () => {
     await dispatch(logoutThunk());
@@ -109,7 +111,26 @@ export default function AppLayout() {
             !inThread && 'pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0'
           )}
         >
-          <Outlet />
+          {/* Inner Suspense keeps the nav/header on screen while a lazy page
+              chunk loads; the keyed fade gives a smooth page transition.
+              Opacity-only so it never creates a containing block that would
+              break sticky headers inside pages. */}
+          <Suspense
+            fallback={
+              <div className="grid min-h-[60vh] place-items-center">
+                <Spinner size={26} className="text-brand-600" />
+              </div>
+            }
+          >
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              <Outlet />
+            </motion.div>
+          </Suspense>
         </main>
       </div>
 

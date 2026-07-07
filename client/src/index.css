@@ -34,6 +34,16 @@
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
+  /* Remove the grey tap-flash on mobile; components define their own :active. */
+  a,
+  button,
+  [role='button'],
+  input,
+  textarea,
+  select {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   ::selection {
     @apply bg-brand-600/20;
   }
@@ -78,6 +88,21 @@
 
   .container-app {
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+}
+
+/* Respect the OS "reduce motion" setting: near-instant transitions and no
+   smooth-scroll. Pairs with framer-motion's <MotionConfig reducedMotion="user">. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }
 
