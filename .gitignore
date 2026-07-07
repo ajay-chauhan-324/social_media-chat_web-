@@ -1,1 +1,23 @@
+# Dependencies
 node_modules
+
+# Build output (rebuilt by Vercel/CI from source — no need to track)
+dist
+client/dist
+build
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+
+# Local env overrides (committed .env files are kept intentionally)
+.env.local
+.env.*.local
+server/uploads/*
+!server/uploads/.gitkeep
