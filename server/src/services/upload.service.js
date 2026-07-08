@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import cloudinary from '../config/cloudinary.js';
 import env from '../config/env.js';
+import ApiError from '../utils/ApiError.js';
 import { randomToken } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
 
@@ -24,7 +25,16 @@ export const uploadImage = async (file, folder = 'posts') => {
           transformation: [{ width: 1600, height: 1600, crop: 'limit' }, { quality: 'auto' }],
         },
         (err, result) => {
-          if (err) return reject(err);
+          if (err) {
+            // Surface the real cause in the logs (bad api_key/secret/cloud_name,
+            // disabled account, etc.) and return a clear, non-generic message.
+            logger.error(`Cloudinary upload failed: ${err?.message || err}`);
+            return reject(
+              ApiError.internal(
+                'Image upload failed — the server media (Cloudinary) configuration looks invalid.'
+              )
+            );
+          }
           return resolve({
             url: result.secure_url,
             publicId: result.public_id,
