@@ -1,5 +1,6 @@
 import Notification from '../models/Notification.js';
 import { emitToUser } from '../socket/index.js';
+import { sendPush } from './push.service.js';
 import { getPagination, buildMeta } from '../utils/pagination.js';
 
 const ACTOR_FIELDS = 'name username avatar isVerified';
@@ -21,6 +22,17 @@ export const createNotification = async ({ recipient, actor, type, text, post, c
   });
   const populated = await Notification.findById(notification._id).populate('actor', ACTOR_FIELDS);
   emitToUser(recipient, 'notification:new', { notification: populated });
+
+  // Device push (best-effort) — reaches the user even with the app closed.
+  const url = post
+    ? `/app/post/${post}`
+    : conversation
+      ? `/app/messages/${conversation}`
+      : '/app/notifications';
+  sendPush(recipient, { title: 'ArtROOT Chat', body: text || 'You have a new notification', url }).catch(
+    () => {}
+  );
+
   return populated;
 };
 

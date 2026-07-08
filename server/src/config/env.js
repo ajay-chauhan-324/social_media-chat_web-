@@ -39,6 +39,13 @@ const env = {
       bool(process.env.CLOUDINARY_API_SECRET),
   },
 
+  webpush: {
+    publicKey: process.env.VAPID_PUBLIC_KEY || '',
+    privateKey: process.env.VAPID_PRIVATE_KEY || '',
+    subject: process.env.VAPID_SUBJECT || 'mailto:admin@artrootchat.com',
+    enabled: bool(process.env.VAPID_PUBLIC_KEY) && bool(process.env.VAPID_PRIVATE_KEY),
+  },
+
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: Number(process.env.SMTP_PORT) || 587,

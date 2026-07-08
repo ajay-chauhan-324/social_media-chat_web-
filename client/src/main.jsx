@@ -13,6 +13,13 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import { SocketProvider } from '@/context/SocketContext';
 import './index.css';
 
+// Register the service worker that receives device push notifications.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Provider store={store}>

@@ -10,6 +10,7 @@ import {
   FiSmile,
   FiCpu,
   FiBell,
+  FiBellOff,
   FiCheckCircle,
 } from 'react-icons/fi';
 import Avatar from '@/components/ui/Avatar';
@@ -21,6 +22,7 @@ import {
   flattenNotifications,
   useMarkAllRead,
 } from '@/features/notifications/useNotifications';
+import usePushNotifications from '@/hooks/usePushNotifications';
 import { timeAgo } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
@@ -48,6 +50,7 @@ const linkFor = (n) => {
 export default function Notifications() {
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useNotifications();
   const markAll = useMarkAllRead();
+  const push = usePushNotifications();
   const notifications = flattenNotifications(data);
 
   // Mark everything read shortly after viewing.
@@ -70,9 +73,25 @@ export default function Notifications() {
             </div>
             <h1 className="font-display text-xl font-extrabold text-content">Notifications</h1>
           </div>
-          <Button variant="ghost" size="sm" leftIcon={<FiCheckCircle />} onClick={() => markAll.mutate()}>
-            Mark all read
-          </Button>
+          <div className="flex items-center gap-2">
+            {push.supported && (
+              <Button
+                variant={push.enabled ? 'secondary' : 'gradient'}
+                size="sm"
+                loading={push.busy}
+                leftIcon={push.enabled ? <FiBellOff /> : <FiBell />}
+                onClick={push.enabled ? push.disable : push.enable}
+                title={push.enabled ? 'Turn off device notifications' : 'Get notified on this device'}
+              >
+                <span className="hidden sm:inline">
+                  {push.enabled ? 'Notifications on' : 'Enable notifications'}
+                </span>
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" leftIcon={<FiCheckCircle />} onClick={() => markAll.mutate()}>
+              <span className="hidden sm:inline">Mark all read</span>
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (

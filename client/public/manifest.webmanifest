@@ -1,0 +1,11 @@
+{
+  "name": "ArtROOT Chat",
+  "short_name": "ArtROOT",
+  "description": "Connect, Create, Collaborate — a premium social platform.",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#2563EB",
+  "icons": [{ "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" }]
+}
