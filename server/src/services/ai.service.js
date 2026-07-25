@@ -4,6 +4,10 @@ import logger from '../utils/logger.js';
 import ApiError from '../utils/ApiError.js';
 import AIHistory from '../models/AIHistory.js';
 import { getPagination, buildMeta } from '../utils/pagination.js';
+import { buildSystemPrompt } from '../ai/prompt.js';
+import { TOOL_DECLARATIONS, CONFIRMATION_REQUIRED } from '../ai/tools.js';
+import { executeTool, prepareSendMessage, executeConfirmedAction } from '../ai/tool-executor.js';
+import { toGeminiContents } from '../ai/memory.js';
 
 // Lazily construct the client so a missing key never crashes boot.
 let client = null;
@@ -80,7 +84,7 @@ export const TOOLS = {
 
 export const isTool = (t) => Object.prototype.hasOwnProperty.call(TOOLS, t);
 
-// ── Mock responses (used when no OpenAI key is configured) ──────────────────
+// ── Mock responses (used when no Gemini key is configured) ──────────────────
 const clip = (s, n) => (s.length > n ? `${s.slice(0, n).trim()}…` : s);
 const mockFor = (tool, input) => {
   const t = input.trim();
@@ -110,12 +114,12 @@ const mockFor = (tool, input) => {
     case 'imageprompt':
       return `A cinematic, highly-detailed scene of ${clip(t, 60)}, golden-hour lighting, shallow depth of field, warm color grade, 8k, photorealistic.`;
     default:
-      return `Here's a helpful take on "${clip(t, 80)}":\n\nThis is a mock response — add your GEMINI_API_KEY to the server .env to get real AI answers. In the meantime, the full AI experience (history, tools, saving) works end-to-end.`;
+      return `Here's a helpful take on "${clip(t, 80)}":\n\nThis is a mock response — add your GEMINI_API_KEY to the server .env to get real AI answers. In the meantime, the full AI experience (history, tools, saving, app-aware answers) works end-to-end.`;
   }
 };
 
-const MAX_CONTEXT = 20; // cap messages sent to the model
 const REQUEST_TIMEOUT = 30000;
+const MAX_TOOL_ITERATIONS = 3; // hard cap on tool round-trips per turn — bounds cost & latency
 
 /** Reject if the promise doesn't settle within `ms` so the request never hangs. */
 const withTimeout = (promise, ms) =>
@@ -126,14 +130,18 @@ const withTimeout = (promise, ms) =>
     ),
   ]);
 
-/** Map our stored roles to Gemini's contents format ('assistant' → 'model'). */
-const toGeminiContents = (messages) =>
-  messages
-    .filter((m) => m.role === 'user' || m.role === 'assistant')
-    .slice(-MAX_CONTEXT)
-    .map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
+/** Translate a Gemini/network failure into a friendly ApiError. */
+const asApiError = (err) => {
+  logger.error('Gemini error:', err.message);
+  const status = err.status || err.code;
+  if (status === 429 || /quota|rate/i.test(err.message)) {
+    return ApiError.tooMany('AI is busy right now — please try again shortly');
+  }
+  if (err.code === 'ETIMEDOUT') return new ApiError(504, 'AI request timed out — please try again');
+  return new ApiError(502, 'AI service is unavailable right now');
+};
 
-/** Core model call with graceful mock fallback + friendly errors. */
+/** Core model call (no tools) — used by content tools and mock fallback. */
 const complete = async (tool, messages) => {
   if (!client) {
     const lastUser = [...messages].reverse().find((m) => m.role === 'user');
@@ -158,30 +166,111 @@ const complete = async (tool, messages) => {
     );
     const content = (res.text || '').trim();
     if (!content) {
-      // Empty output usually means a safety block or truncation.
       return { content: 'I couldn’t generate a response for that — please rephrase and try again.', tokens: 0, mocked: false };
     }
     return { content, tokens: res.usageMetadata?.totalTokenCount || 0, mocked: false };
   } catch (err) {
-    logger.error('Gemini error:', err.message);
-    const status = err.status || err.code;
-    if (status === 429 || /quota|rate/i.test(err.message)) {
-      throw ApiError.tooMany('AI is busy right now — please try again shortly');
-    }
-    if (err.code === 'ETIMEDOUT') throw new ApiError(504, 'AI request timed out — please try again');
-    throw new ApiError(502, 'AI service is unavailable right now');
+    throw asApiError(err);
   }
 };
 
+/**
+ * Assistant persona with function calling: the model can request one of the
+ * read-only tools (executed immediately) or send_message (which is only ever
+ * *prepared* here — actual sending happens through resolvePendingAction after
+ * explicit user confirmation). Loops up to MAX_TOOL_ITERATIONS to let the
+ * model chain a tool result into its final answer.
+ */
+const completeAssistant = async (user, messages) => {
+  if (!client) {
+    const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+    return { content: mockFor('assistant', lastUser?.content || ''), tokens: 0, mocked: true };
+  }
+
+  const systemInstruction = buildSystemPrompt(TOOLS.assistant.system, { persona: 'assistant', user });
+  let contents = toGeminiContents(messages);
+  let totalTokens = 0;
+
+  for (let i = 0; i < MAX_TOOL_ITERATIONS; i += 1) {
+    let res;
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      res = await withTimeout(
+        client.models.generateContent({
+          model: env.gemini.model,
+          contents,
+          config: {
+            systemInstruction,
+            temperature: 0.7,
+            maxOutputTokens: 700,
+            thinkingConfig: { thinkingBudget: 0 },
+            tools: [{ functionDeclarations: TOOL_DECLARATIONS }],
+          },
+        }),
+        REQUEST_TIMEOUT
+      );
+    } catch (err) {
+      throw asApiError(err);
+    }
+    totalTokens += res.usageMetadata?.totalTokenCount || 0;
+
+    const call = res.functionCalls?.[0];
+    if (!call) {
+      const content = (res.text || '').trim();
+      return {
+        content: content || 'I couldn’t generate a response for that — please rephrase and try again.',
+        tokens: totalTokens,
+        mocked: false,
+      };
+    }
+
+    if (CONFIRMATION_REQUIRED.has(call.name)) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const prep = await prepareSendMessage(user, call.args);
+        return {
+          content: `${prep.preview}\n\nConfirm below to send it, or cancel.`,
+          tokens: totalTokens,
+          mocked: false,
+          pendingAction: { tool: prep.tool, args: prep.args, preview: prep.preview, createdAt: new Date() },
+        };
+      } catch (err) {
+        return { content: `I couldn't prepare that message: ${err.message}`, tokens: totalTokens, mocked: false };
+      }
+    }
+
+    let functionResponsePart;
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      const result = await executeTool(user, call.name, call.args);
+      functionResponsePart = { name: call.name, response: { output: result } };
+    } catch (err) {
+      functionResponsePart = { name: call.name, response: { error: err.message || 'Tool failed' } };
+    }
+
+    contents = [
+      ...contents,
+      { role: 'model', parts: [{ functionCall: { name: call.name, args: call.args } }] },
+      { role: 'user', parts: [{ functionResponse: functionResponsePart }] },
+    ];
+  }
+
+  return {
+    content: "I wasn't able to finish that after a few tries — could you try rephrasing your request?",
+    tokens: totalTokens,
+    mocked: false,
+  };
+};
+
 // ── Chat: create or continue a conversation ─────────────────────────────────
-export const chat = async (userId, { conversationId, message, tool = 'assistant' }) => {
+export const chat = async (user, { conversationId, message, tool = 'assistant' }) => {
   let conversation;
   if (conversationId) {
-    conversation = await AIHistory.findOne({ _id: conversationId, user: userId });
+    conversation = await AIHistory.findOne({ _id: conversationId, user: user.id });
     if (!conversation) throw ApiError.notFound('Conversation not found');
   } else {
     conversation = new AIHistory({
-      user: userId,
+      user: user.id,
       title: message.slice(0, 60),
       tool,
       model: env.gemini.model,
@@ -189,14 +278,47 @@ export const chat = async (userId, { conversationId, message, tool = 'assistant'
     });
   }
 
+  // A new plain message implicitly cancels any pending confirmation.
+  conversation.pendingAction = null;
+
   const now = new Date();
   conversation.messages.push({ role: 'user', content: message, at: now });
 
-  const { content, tokens } = await complete(conversation.tool || tool, conversation.messages);
+  const activeTool = conversation.tool || tool;
+  const { content, tokens, pendingAction } =
+    activeTool === 'assistant' ? await completeAssistant(user, conversation.messages) : await complete(activeTool, conversation.messages);
+
   conversation.messages.push({ role: 'assistant', content, at: new Date() });
   conversation.tokens += tokens;
+  if (pendingAction) conversation.pendingAction = pendingAction;
   await conversation.save();
 
+  return conversation.toObject();
+};
+
+/** Confirm or cancel a pending action (currently only send_message) on a conversation. */
+export const resolvePendingAction = async (user, conversationId, confirm) => {
+  const conversation = await AIHistory.findOne({ _id: conversationId, user: user.id });
+  if (!conversation) throw ApiError.notFound('Conversation not found');
+  const pending = conversation.pendingAction;
+  if (!pending) throw ApiError.badRequest('No pending action to confirm');
+
+  conversation.pendingAction = null;
+
+  let replyContent;
+  if (confirm) {
+    try {
+      const result = await executeConfirmedAction(user, pending);
+      replyContent = `✅ Sent to @${result.to}: "${result.content}"`;
+    } catch (err) {
+      replyContent = `I couldn't send that: ${err.message}`;
+    }
+  } else {
+    replyContent = "Okay, cancelled — I won't send that.";
+  }
+
+  conversation.messages.push({ role: 'assistant', content: replyContent, at: new Date() });
+  await conversation.save();
   return conversation.toObject();
 };
 

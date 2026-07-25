@@ -11,3 +11,8 @@ export const toolSchema = z.object({
   input: z.string().trim().min(1, 'Input cannot be empty').max(4000),
   save: z.boolean().optional(),
 });
+
+export const confirmSchema = z.object({
+  conversationId: z.string().min(1, 'conversationId is required'),
+  confirm: z.boolean(),
+});

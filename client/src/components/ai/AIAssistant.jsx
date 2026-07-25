@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiSend, FiCpu, FiMaximize2, FiTrash2 } from 'react-icons/fi';
 import Spinner from '@/components/ui/Spinner';
 import AIMessage from './AIMessage';
+import AIPendingAction from './AIPendingAction';
 import TypingIndicator from '@/components/chat/TypingIndicator';
 import { useAIChat } from '@/features/ai/useAI';
 
@@ -18,6 +19,7 @@ export default function AIAssistant() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
+  const [pendingAction, setPendingAction] = useState(null);
   const [input, setInput] = useState('');
   const chat = useAIChat();
   const scrollRef = useRef(null);
@@ -30,19 +32,27 @@ export default function AIAssistant() {
     const msg = (text ?? input).trim();
     if (!msg || chat.isPending) return;
     setInput('');
+    setPendingAction(null);
     setMessages((prev) => [...prev, { role: 'user', content: msg }]);
     try {
       const conversation = await chat.mutateAsync({ conversationId, message: msg, tool: 'assistant' });
       setConversationId(conversation._id);
       setMessages(conversation.messages.map((m) => ({ role: m.role, content: m.content })));
+      setPendingAction(conversation.pendingAction || null);
     } catch {
       setMessages((prev) => prev.slice(0, -1)); // roll back optimistic user msg
     }
   };
 
+  const handleResolved = (conversation) => {
+    setMessages(conversation.messages.map((m) => ({ role: m.role, content: m.content })));
+    setPendingAction(null);
+  };
+
   const reset = () => {
     setMessages([]);
     setConversationId(null);
+    setPendingAction(null);
   };
 
   return (
@@ -115,6 +125,11 @@ export default function AIAssistant() {
                   {messages.map((m, i) => (
                     <AIMessage key={i} role={m.role} content={m.content} />
                   ))}
+                  <AIPendingAction
+                    conversationId={conversationId}
+                    pendingAction={pendingAction}
+                    onResolved={handleResolved}
+                  />
                   {chat.isPending && (
                     <div className="flex items-center gap-2.5">
                       <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-gradient text-white">

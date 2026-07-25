@@ -9,8 +9,14 @@ export const getTools = asyncHandler(async (_req, res) => {
 });
 
 export const chat = asyncHandler(async (req, res) => {
-  const conversation = await aiService.chat(req.user.id, req.body);
+  const conversation = await aiService.chat(req.user, req.body);
   return ApiResponse.ok(res, { conversation }, 'AI reply');
+});
+
+/** Confirm or cancel a pending AI action (e.g. send_message) before it executes. */
+export const confirmAction = asyncHandler(async (req, res) => {
+  const conversation = await aiService.resolvePendingAction(req.user, req.body.conversationId, req.body.confirm);
+  return ApiResponse.ok(res, { conversation }, 'Action resolved');
 });
 
 export const runTool = asyncHandler(async (req, res) => {

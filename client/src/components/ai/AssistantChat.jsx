@@ -3,6 +3,7 @@ import { FiSend, FiCpu, FiPlus, FiSearch, FiTrash2, FiMessageSquare } from 'reac
 import Spinner from '@/components/ui/Spinner';
 import Button from '@/components/ui/Button';
 import AIMessage from './AIMessage';
+import AIPendingAction from './AIPendingAction';
 import TypingIndicator from '@/components/chat/TypingIndicator';
 import {
   useAIHistory,
@@ -16,6 +17,7 @@ import { cn } from '@/lib/cn';
 export default function AssistantChat() {
   const [activeId, setActiveId] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [pendingAction, setPendingAction] = useState(null);
   const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
   const syncedId = useRef(null);
@@ -31,6 +33,7 @@ export default function AssistantChat() {
     if (conversation && conversation._id !== syncedId.current) {
       syncedId.current = conversation._id;
       setMessages(conversation.messages.map((m) => ({ role: m.role, content: m.content })));
+      setPendingAction(conversation.pendingAction || null);
     }
   }, [conversation]);
 
@@ -41,6 +44,7 @@ export default function AssistantChat() {
   const newChat = () => {
     setActiveId(null);
     setMessages([]);
+    setPendingAction(null);
     syncedId.current = null;
   };
 
@@ -48,15 +52,22 @@ export default function AssistantChat() {
     const msg = (text ?? input).trim();
     if (!msg || chat.isPending) return;
     setInput('');
+    setPendingAction(null);
     setMessages((prev) => [...prev, { role: 'user', content: msg }]);
     try {
       const conv = await chat.mutateAsync({ conversationId: activeId, message: msg, tool: 'assistant' });
       syncedId.current = conv._id;
       setActiveId(conv._id);
       setMessages(conv.messages.map((m) => ({ role: m.role, content: m.content })));
+      setPendingAction(conv.pendingAction || null);
     } catch {
       setMessages((prev) => prev.slice(0, -1));
     }
+  };
+
+  const handleResolved = (conv) => {
+    setMessages(conv.messages.map((m) => ({ role: m.role, content: m.content })));
+    setPendingAction(null);
   };
 
   const openConversation = (id) => {
@@ -139,6 +150,7 @@ export default function AssistantChat() {
               {messages.map((m, i) => (
                 <AIMessage key={i} role={m.role} content={m.content} />
               ))}
+              <AIPendingAction conversationId={activeId} pendingAction={pendingAction} onResolved={handleResolved} />
               {chat.isPending && (
                 <div className="flex items-center gap-2.5">
                   <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-gradient text-white">

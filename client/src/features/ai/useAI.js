@@ -37,6 +37,18 @@ export const useAIChat = () => {
   });
 };
 
+export const useConfirmAction = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => aiService.confirmAction(payload),
+    onSuccess: (conversation) => {
+      qc.setQueryData(aiKeys.conversation(conversation._id), conversation);
+      qc.invalidateQueries({ queryKey: aiKeys.history });
+    },
+    onError: (e) => toast.error(getErrorMessage(e)),
+  });
+};
+
 export const useRunTool = () => {
   const qc = useQueryClient();
   return useMutation({
