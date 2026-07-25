@@ -17,6 +17,8 @@ const adminService = {
   reports: (params) => api.get('/admin/reports', { params }).then((r) => r.data),
   resolveReport: (id, status) =>
     api.patch(`/admin/reports/${id}`, { status }).then((r) => r.data.data.report),
+
+  ai: (params) => api.get('/admin/ai', { params }).then((r) => r.data),
 };
 
 export default adminService;

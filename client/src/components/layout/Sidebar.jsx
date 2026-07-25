@@ -9,6 +9,7 @@ import {
   FiBookmark,
   FiUser,
   FiSettings,
+  FiCpu,
   FiShield,
 } from 'react-icons/fi';
 import Logo from '@/components/ui/Logo';
@@ -23,6 +24,7 @@ const NAV = [
   { to: '/app/messages', label: 'Messages', icon: FiMessageCircle, badge: 'messages' },
   { to: '/app/notifications', label: 'Notifications', icon: FiBell, badge: 'notifications' },
   { to: '/app/bookmarks', label: 'Bookmarks', icon: FiBookmark },
+  { to: '/app/ai', label: 'AI Studio', icon: FiCpu },
   { to: '/app/profile', label: 'Profile', icon: FiUser },
   { to: '/app/settings', label: 'Settings', icon: FiSettings },
 ];

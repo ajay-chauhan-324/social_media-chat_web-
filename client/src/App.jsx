@@ -28,7 +28,9 @@ const HashtagFeed = lazy(() => import('@/pages/app/HashtagFeed'));
 const Messages = lazy(() => import('@/pages/app/Messages'));
 const Notifications = lazy(() => import('@/pages/app/Notifications'));
 const Search = lazy(() => import('@/pages/app/Search'));
-const ComingSoon = lazy(() => import('@/pages/app/ComingSoon'));
+const AIStudio = lazy(() => import('@/pages/app/AIStudio'));
+const Settings = lazy(() => import('@/pages/app/Settings'));
+const SettingsAbout = lazy(() => import('@/pages/app/SettingsAbout'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 
 // Admin
@@ -38,6 +40,7 @@ const AdminUsers = lazy(() => import('@/pages/admin/AdminUsers'));
 const AdminPosts = lazy(() => import('@/pages/admin/AdminPosts'));
 const AdminComments = lazy(() => import('@/pages/admin/AdminComments'));
 const AdminReports = lazy(() => import('@/pages/admin/AdminReports'));
+const AdminAI = lazy(() => import('@/pages/admin/AdminAI'));
 
 export default function App() {
   const dispatch = useDispatch();
@@ -95,10 +98,9 @@ export default function App() {
                 <Route path="messages" element={<Messages />} />
                 <Route path="messages/:conversationId" element={<Messages />} />
                 <Route path="notifications" element={<Notifications />} />
-                <Route
-                  path="settings"
-                  element={<ComingSoon title="Settings" description="Account, appearance, privacy, and notification settings are coming soon." />}
-                />
+                <Route path="ai" element={<AIStudio />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="settings/about" element={<SettingsAbout />} />
               </Route>
             </Route>
 
@@ -110,6 +112,7 @@ export default function App() {
                 <Route path="posts" element={<AdminPosts />} />
                 <Route path="comments" element={<AdminComments />} />
                 <Route path="reports" element={<AdminReports />} />
+                <Route path="ai" element={<AdminAI />} />
               </Route>
             </Route>
 

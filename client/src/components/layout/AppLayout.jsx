@@ -1,5 +1,5 @@
 import { useState, Suspense } from 'react';
-import { Outlet, useNavigate, useMatch, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useMatch, useLocation, Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/cn';
 import { useDispatch } from 'react-redux';
@@ -11,12 +11,12 @@ import Avatar from '@/components/ui/Avatar';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
+import AIAssistant from '@/components/ai/AIAssistant';
 import { useAuth } from '@/hooks/useAuth';
 import { logoutThunk } from '@/features/auth/authSlice';
 
 export default function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const { user } = useAuth();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -26,15 +26,13 @@ export default function AppLayout() {
   // and the composer isn't covered. No effect on desktop (sidebar layout).
   const inThread = Boolean(useMatch('/app/messages/:conversationId'));
   const location = useLocation();
+  // The AI Agent is a distinct feature from Chat — keep it off every
+  // /app/messages* route (list + open threads) so the two never overlap.
+  const inMessages = location.pathname.startsWith('/app/messages');
 
   const handleLogout = async () => {
     await dispatch(logoutThunk());
     navigate('/');
-  };
-
-  const submitSearch = (e) => {
-    e.preventDefault();
-    navigate(searchTerm.trim() ? `/app/search?q=${encodeURIComponent(searchTerm.trim())}` : '/app/search');
   };
 
   return (
@@ -80,16 +78,14 @@ export default function AppLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Desktop top bar (mobile uses <MobileHeader/> below) */}
         <header className="sticky top-0 z-30 hidden h-16 items-center gap-3 border-b border-line bg-surface/80 px-4 backdrop-blur-xl lg:flex">
-          <form onSubmit={submitSearch} className="relative max-w-md flex-1">
-            <FiSearch className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-            <input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search people…"
-              className="input-base h-10 pl-10"
-              aria-label="Search people"
-            />
-          </form>
+          <Link
+            to="/app/search"
+            className="relative flex h-10 max-w-md flex-1 items-center rounded-xl border border-line bg-surface-2/60 px-3.5 text-sm text-muted transition hover:border-brand-500 hover:text-content"
+            aria-label="Search people"
+          >
+            <FiSearch className="mr-2.5 shrink-0" />
+            Search people…
+          </Link>
 
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
@@ -135,6 +131,10 @@ export default function AppLayout() {
 
       {/* Instagram-style bottom navigation (mobile only, hidden in a thread) */}
       {!inThread && <MobileNav />}
+
+      {/* Floating AI assistant — available on every app page except Chat,
+          which is a deliberately separate feature. */}
+      {!inMessages && <AIAssistant />}
     </div>
   );
 }

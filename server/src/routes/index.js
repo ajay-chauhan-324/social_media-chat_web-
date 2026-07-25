@@ -8,6 +8,7 @@ import messageRoutes from './message.routes.js';
 import notificationRoutes from './notification.routes.js';
 import adminRoutes from './admin.routes.js';
 import pushRoutes from './push.routes.js';
+import aiRoutes from './ai.routes.js';
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use('/messages', messageRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/admin', adminRoutes);
 router.use('/push', pushRoutes);
+router.use('/ai', aiRoutes);
 
 export default router;

@@ -12,6 +12,7 @@ const userService = {
     api.get(`/users/${username}/following`, { params: { page } }).then((r) => r.data),
   follow: (username) => api.post(`/users/${username}/follow`).then((r) => r.data.data),
   unfollow: (username) => api.delete(`/users/${username}/follow`).then((r) => r.data.data),
+  deleteAccount: () => api.delete('/users/me').then((r) => r.data),
 };
 
 export default userService;

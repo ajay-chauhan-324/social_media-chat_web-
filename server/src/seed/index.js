@@ -16,11 +16,12 @@ import Bookmark from '../models/Bookmark.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import Notification from '../models/Notification.js';
+import AIHistory from '../models/AIHistory.js';
 import Report from '../models/Report.js';
 
 import {
   FIRST_NAMES, LAST_NAMES, CITIES, ROLES, BIOS, POST_TEMPLATES, COMMENTS,
-  CHAT_MESSAGES, GROUP_NAMES, REPORT_REASONS, REPORT_DETAILS,
+  CHAT_MESSAGES, GROUP_NAMES, AI_PROMPTS, REPORT_REASONS, REPORT_DETAILS,
 } from './data.js';
 
 // ── Random helpers ─────────────────────────────────────────────────────────
@@ -49,7 +50,7 @@ const TECH_TAGS = ['react', 'nodejs', 'mongodb', 'javascript', 'typescript', 'py
 const wipe = async () => {
   logger.warn('Wiping existing collections…');
   await Promise.all(
-    [User, Post, Comment, Like, Follow, Bookmark, Conversation, Message, Notification, Report].map(
+    [User, Post, Comment, Like, Follow, Bookmark, Conversation, Message, Notification, AIHistory, Report].map(
       (M) => M.deleteMany({})
     )
   );
@@ -465,8 +466,46 @@ const createNotifications = async (users, posts, follows) => {
       updatedAt: createdAt,
     });
   }
+  // A few AI/system notifications
+  users.slice(0, 20).forEach((u) => {
+    const createdAt = randomDateWithin(20);
+    notifs.push({
+      _id: oid(),
+      recipient: u._id,
+      type: 'ai',
+      text: 'Your AI-generated captions are ready ✨',
+      read: chance(0.5),
+      createdAt,
+      updatedAt: createdAt,
+    });
+  });
   await Notification.insertMany(notifs, { timestamps: false });
   logger.success(`Created ${notifs.length} notifications`);
+};
+
+const createAIHistory = async (users) => {
+  const histories = [];
+  for (let i = 0; i < 70; i += 1) {
+    const user = pick(users);
+    const prompt = pick(AI_PROMPTS);
+    const createdAt = randomDateWithin(90);
+    histories.push({
+      _id: oid(),
+      user: user._id,
+      title: prompt.q.slice(0, 60),
+      tool: prompt.tool,
+      messages: [
+        { role: 'user', content: prompt.q, at: createdAt },
+        { role: 'assistant', content: prompt.a, at: new Date(createdAt.getTime() + 4000) },
+      ],
+      model: env.gemini.model,
+      tokens: between(120, 900),
+      createdAt,
+      updatedAt: createdAt,
+    });
+  }
+  await AIHistory.insertMany(histories, { timestamps: false });
+  logger.success(`Created ${histories.length} AI conversations`);
 };
 
 const createReports = async (users, posts, comments) => {
@@ -514,6 +553,7 @@ export const runSeed = async () => {
   await recomputeUserCounts(users, follows, posts);
   await createConversations(users);
   await createNotifications(users, posts, follows);
+  await createAIHistory(users);
   await createReports(users, posts, comments);
 
   logger.success('✅ Seed complete! Log in as  admin@artrootchat.com / Admin@123');

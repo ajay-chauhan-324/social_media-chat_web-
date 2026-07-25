@@ -4,6 +4,8 @@ import ApiError from '../utils/ApiError.js';
 import User from '../models/User.js';
 import Follow from '../models/Follow.js';
 import { isFollowing } from '../services/follow.service.js';
+import { deleteOwnAccount } from '../services/user.service.js';
+import { clearRefreshCookie } from '../utils/cookies.js';
 
 const EDITABLE_FIELDS = [
   'name',
@@ -35,6 +37,13 @@ export const updateMe = asyncHandler(async (req, res) => {
     runValidators: true,
   });
   return ApiResponse.ok(res, { user }, 'Profile updated');
+});
+
+/** Permanently delete the current user's own account and all owned data. */
+export const deleteMe = asyncHandler(async (req, res) => {
+  await deleteOwnAccount(req.user.id);
+  clearRefreshCookie(res);
+  return ApiResponse.ok(res, null, 'Account deleted');
 });
 
 /** Public profile by username, with viewer-relative follow state. */

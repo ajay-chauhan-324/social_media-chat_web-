@@ -9,6 +9,7 @@ const router = Router();
 // Current user
 router.get('/me', protect, userController.getMe);
 router.patch('/me', protect, userController.updateMe);
+router.delete('/me', protect, userController.deleteMe);
 
 // Discovery (must precede the /:username catch-all)
 router.get('/search', protect, userController.searchUsers);

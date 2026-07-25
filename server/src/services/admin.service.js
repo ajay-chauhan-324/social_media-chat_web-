@@ -5,6 +5,7 @@ import Like from '../models/Like.js';
 import Follow from '../models/Follow.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
+import AIHistory from '../models/AIHistory.js';
 import Report from '../models/Report.js';
 import ApiError from '../utils/ApiError.js';
 import { getPagination, buildMeta } from '../utils/pagination.js';
@@ -35,6 +36,7 @@ export const getStats = async () => {
     totalConversations,
     totalMessages,
     messagesToday,
+    aiConversations,
     pendingReports,
     totalReports,
   ] = await Promise.all([
@@ -50,8 +52,16 @@ export const getStats = async () => {
     Conversation.countDocuments(),
     Message.countDocuments(),
     Message.countDocuments({ createdAt: { $gte: today } }),
+    AIHistory.countDocuments(),
     Report.countDocuments({ status: 'pending' }),
     Report.countDocuments(),
+  ]);
+
+  // AI requests today = user messages created today across histories.
+  const aiToday = await AIHistory.aggregate([
+    { $unwind: '$messages' },
+    { $match: { 'messages.role': 'user', 'messages.at': { $gte: today } } },
+    { $count: 'count' },
   ]);
 
   return {
@@ -65,6 +75,7 @@ export const getStats = async () => {
     },
     content: { posts: totalPosts, postsToday, comments: totalComments, likes: totalLikes },
     chat: { conversations: totalConversations, messages: totalMessages, messagesToday },
+    ai: { conversations: aiConversations, requestsToday: aiToday[0]?.count || 0 },
     reports: { pending: pendingReports, total: totalReports },
   };
 };
@@ -224,4 +235,29 @@ export const resolveReport = async (reportId, adminId, status) => {
   );
   if (!report) throw ApiError.notFound('Report not found');
   return report;
+};
+
+// ── AI usage ───────────────────────────────────────────────────────────
+export const getAiUsage = async (query) => {
+  const pg = getPagination(query, { defaultLimit: 15 });
+  const [histories, total, byTool, byDay] = await Promise.all([
+    AIHistory.find()
+      .sort({ updatedAt: -1 })
+      .skip(pg.skip)
+      .limit(pg.limit)
+      .populate('user', 'name username avatar'),
+    AIHistory.countDocuments(),
+    AIHistory.aggregate([{ $group: { _id: '$tool', count: { $sum: 1 } } }, { $sort: { count: -1 } }]),
+    AIHistory.aggregate([
+      { $match: { createdAt: { $gte: daysAgo(13) } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+    ]),
+  ]);
+  return {
+    histories,
+    byTool: byTool.map((t) => ({ tool: t._id, count: t.count })),
+    byDay: byDay.map((d) => ({ label: d._id.slice(5), value: d.count })),
+    meta: buildMeta({ ...pg, total }),
+  };
 };

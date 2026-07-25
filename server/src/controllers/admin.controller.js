@@ -58,3 +58,8 @@ export const resolveReport = asyncHandler(async (req, res) => {
   const report = await adminService.resolveReport(req.params.id, req.user.id, req.body.status);
   return ApiResponse.ok(res, { report }, 'Report updated');
 });
+
+export const getAiUsage = asyncHandler(async (req, res) => {
+  const { histories, byTool, byDay, meta } = await adminService.getAiUsage(req.query);
+  return ApiResponse.ok(res, { histories, byTool, byDay }, 'AI usage', meta);
+});

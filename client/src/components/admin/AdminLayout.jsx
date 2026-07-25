@@ -8,6 +8,7 @@ import {
   FiFileText,
   FiMessageSquare,
   FiFlag,
+  FiCpu,
   FiMenu,
   FiArrowLeft,
   FiLogOut,
@@ -26,6 +27,7 @@ const NAV = [
   { to: '/admin/posts', label: 'Posts', icon: FiFileText },
   { to: '/admin/comments', label: 'Comments', icon: FiMessageSquare },
   { to: '/admin/reports', label: 'Reports', icon: FiFlag },
+  { to: '/admin/ai', label: 'AI Usage', icon: FiCpu },
 ];
 
 function NavItems({ onNavigate }) {
