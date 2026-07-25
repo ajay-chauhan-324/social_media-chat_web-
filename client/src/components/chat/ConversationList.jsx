@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FiEdit, FiSearch } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
+import { FiEdit, FiSearch, FiHash } from 'react-icons/fi';
 import ConversationItem from './ConversationItem';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
@@ -23,13 +24,23 @@ export default function ConversationList({ activeId, onSelect, onNew }) {
     <div className="flex h-full flex-col border-r border-line bg-surface">
       <div className="flex items-center justify-between px-4 py-3.5">
         <h1 className="font-display text-xl font-extrabold text-content">Messages</h1>
-        <button
-          onClick={onNew}
-          className="grid h-9 w-9 place-items-center rounded-lg bg-brand-gradient text-white shadow-glow transition active:scale-95"
-          aria-label="New conversation"
-        >
-          <FiEdit size={17} />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <Link
+            to="/app/rooms"
+            className="grid h-9 w-9 place-items-center rounded-lg text-content transition hover:bg-surface-2"
+            aria-label="Browse public rooms"
+            title="Rooms"
+          >
+            <FiHash size={18} />
+          </Link>
+          <button
+            onClick={onNew}
+            className="grid h-9 w-9 place-items-center rounded-lg bg-brand-gradient text-white shadow-glow transition active:scale-95"
+            aria-label="New conversation"
+          >
+            <FiEdit size={17} />
+          </button>
+        </div>
       </div>
 
       <div className="px-3 pb-2">

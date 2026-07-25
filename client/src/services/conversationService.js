@@ -7,6 +7,11 @@ const conversationService = {
     api.post('/conversations/private', { username }).then((r) => r.data.data.conversation),
   createGroup: (payload) =>
     api.post('/conversations/group', payload).then((r) => r.data.data.conversation),
+  listRooms: () => api.get('/conversations/rooms').then((r) => r.data.data.rooms),
+  createRoom: (payload) =>
+    api.post('/conversations/rooms', payload).then((r) => r.data.data.conversation),
+  joinRoom: (id) =>
+    api.post(`/conversations/rooms/${id}/join`).then((r) => r.data.data.conversation),
   markRead: (id) => api.post(`/conversations/${id}/read`).then((r) => r.data.data),
   addMembers: (id, usernames) =>
     api.post(`/conversations/${id}/members`, { usernames }).then((r) => r.data.data.conversation),

@@ -86,6 +86,51 @@ export const useCreateGroup = () => {
   });
 };
 
+// ── Public rooms ─────────────────────────────────────────────────────────────
+
+export const useRooms = () =>
+  useQuery({ queryKey: chatKeys.rooms, queryFn: conversationService.listRooms, staleTime: 15 * 1000 });
+
+export const useCreateRoom = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => conversationService.createRoom(payload),
+    onSuccess: () => {
+      toast.success('Room created');
+      qc.invalidateQueries({ queryKey: chatKeys.rooms });
+      qc.invalidateQueries({ queryKey: chatKeys.conversations });
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
+  });
+};
+
+/** Leave a public room (unlike delete, this only removes the caller, not everyone). */
+export const useLeaveRoom = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => conversationService.leave(id),
+    onSuccess: (_data, id) => {
+      qc.setQueryData(chatKeys.conversations, (list) => list?.filter((c) => c._id !== id));
+      qc.invalidateQueries({ queryKey: chatKeys.rooms });
+      qc.removeQueries({ queryKey: chatKeys.messages(id) });
+      qc.removeQueries({ queryKey: ['conversation', id] });
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
+  });
+};
+
+export const useJoinRoom = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => conversationService.joinRoom(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: chatKeys.rooms });
+      qc.invalidateQueries({ queryKey: chatKeys.conversations });
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
+  });
+};
+
 /** Delete a whole conversation (both members lose it). Updates caches instantly. */
 export const useDeleteConversation = () => {
   const qc = useQueryClient();

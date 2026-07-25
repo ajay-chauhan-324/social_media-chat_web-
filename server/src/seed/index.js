@@ -438,6 +438,65 @@ const createConversations = async (users) => {
   return { conversations, messages };
 };
 
+const PUBLIC_ROOMS = [
+  { name: 'General', description: 'Say hello and talk about anything ArtROOT.' },
+  { name: 'Tech', description: 'Code, tools, and everything dev.' },
+  { name: 'Random', description: 'Off-topic chat, memes, and everything else.' },
+];
+
+const createPublicRooms = async (users) => {
+  const real = users.filter((u) => u.role === 'user');
+  const conversations = [];
+  const messages = [];
+
+  for (const room of PUBLIC_ROOMS) {
+    const memberUsers = sample(real, between(8, 20));
+    const convId = oid();
+    const count = between(10, 30);
+    const memberIds = memberUsers.map((u) => u._id);
+    let t = daysAgo(between(2, 20)).getTime();
+    const msgs = [];
+    for (let i = 0; i < count; i += 1) {
+      t += between(1, 180) * 60000;
+      const at = new Date(Math.min(t, Date.now()));
+      msgs.push({
+        _id: oid(),
+        conversation: convId,
+        sender: pick(memberIds),
+        type: 'text',
+        content: pick(CHAT_MESSAGES),
+        readBy: memberIds,
+        isDeleted: false,
+        createdAt: at,
+        updatedAt: at,
+      });
+    }
+    const last = msgs[msgs.length - 1];
+    messages.push(...msgs);
+    conversations.push({
+      _id: convId,
+      type: 'public',
+      name: room.name,
+      description: room.description,
+      createdBy: memberIds[0],
+      members: memberUsers.map((u, idx) => ({
+        user: u._id,
+        role: idx === 0 ? 'admin' : 'member',
+        lastReadAt: last.createdAt,
+        joinedAt: msgs[0].createdAt,
+      })),
+      lastMessage: last._id,
+      lastMessageAt: last.createdAt,
+      createdAt: msgs[0].createdAt,
+      updatedAt: last.createdAt,
+    });
+  }
+
+  await Conversation.insertMany(conversations, { timestamps: false });
+  await Message.insertMany(messages, { timestamps: false });
+  logger.success(`Created ${conversations.length} public rooms, ${messages.length} messages`);
+};
+
 const createNotifications = async (users, posts, follows) => {
   const notifs = [];
   const types = ['like', 'comment', 'reply', 'follow', 'message'];
@@ -552,6 +611,7 @@ export const runSeed = async () => {
   await createBookmarks(users, posts);
   await recomputeUserCounts(users, follows, posts);
   await createConversations(users);
+  await createPublicRooms(users);
   await createNotifications(users, posts, follows);
   await createAIHistory(users);
   await createReports(users, posts, comments);

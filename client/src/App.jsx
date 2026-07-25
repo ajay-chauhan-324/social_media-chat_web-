@@ -26,6 +26,7 @@ const PostDetail = lazy(() => import('@/pages/app/PostDetail'));
 const Bookmarks = lazy(() => import('@/pages/app/Bookmarks'));
 const HashtagFeed = lazy(() => import('@/pages/app/HashtagFeed'));
 const Messages = lazy(() => import('@/pages/app/Messages'));
+const Rooms = lazy(() => import('@/pages/app/Rooms'));
 const Notifications = lazy(() => import('@/pages/app/Notifications'));
 const Search = lazy(() => import('@/pages/app/Search'));
 const AIStudio = lazy(() => import('@/pages/app/AIStudio'));
@@ -97,6 +98,7 @@ export default function App() {
                 <Route path="profile/:username" element={<Profile />} />
                 <Route path="messages" element={<Messages />} />
                 <Route path="messages/:conversationId" element={<Messages />} />
+                <Route path="rooms" element={<Rooms />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="ai" element={<AIStudio />} />
                 <Route path="settings" element={<Settings />} />

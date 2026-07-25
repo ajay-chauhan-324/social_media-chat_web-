@@ -7,9 +7,11 @@ import validate from '../middlewares/validate.middleware.js';
 import {
   startPrivateSchema,
   createGroupSchema,
+  createRoomSchema,
   sendMessageSchema,
   addMembersSchema,
 } from '../validators/chat.validator.js';
+import { messageLimiter } from '../middlewares/rateLimit.middleware.js';
 
 const router = Router();
 
@@ -18,6 +20,12 @@ router.use(protect); // every chat route requires auth
 router.get('/', convController.listConversations);
 router.post('/private', validate(startPrivateSchema), convController.startPrivate);
 router.post('/group', validate(createGroupSchema), convController.createGroup);
+
+// Public rooms — registered before the '/:id' param routes below so
+// 'rooms' is never mistaken for a conversation id.
+router.get('/rooms', convController.listPublicRooms);
+router.post('/rooms', validate(createRoomSchema), convController.createPublicRoom);
+router.post('/rooms/:id/join', convController.joinPublicRoom);
 
 router.get('/:id', convController.getConversation);
 router.post('/:id/read', convController.markRead);
@@ -29,6 +37,7 @@ router.delete('/:id', convController.deleteConversation);
 router.get('/:id/messages', messageController.getMessages);
 router.post(
   '/:id/messages',
+  messageLimiter,
   uploadArray('images', 4),
   validate(sendMessageSchema),
   messageController.sendMessage

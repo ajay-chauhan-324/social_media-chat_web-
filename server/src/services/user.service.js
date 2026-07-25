@@ -25,7 +25,8 @@ export const deleteOwnAccount = async (userId) => {
 
   const conversations = await Conversation.find({ 'members.user': userId }).select('_id type');
   const privateIds = conversations.filter((c) => c.type === 'private').map((c) => c._id);
-  const groupIds = conversations.filter((c) => c.type === 'group').map((c) => c._id);
+  // Groups and public rooms both just lose this member — the conversation survives for the rest.
+  const groupIds = conversations.filter((c) => c.type !== 'private').map((c) => c._id);
 
   await Promise.all([
     Post.deleteMany({ author: userId }),

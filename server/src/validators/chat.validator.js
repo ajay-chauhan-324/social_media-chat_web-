@@ -9,6 +9,11 @@ export const createGroupSchema = z.object({
   memberUsernames: z.array(z.string().trim()).min(1, 'Add at least one member'),
 });
 
+export const createRoomSchema = z.object({
+  name: z.string().trim().min(1, 'Room name is required').max(80),
+  description: z.string().trim().max(200).optional().default(''),
+});
+
 export const sendMessageSchema = z
   .object({
     content: z.string().trim().max(4000).optional().default(''),

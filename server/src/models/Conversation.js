@@ -14,11 +14,24 @@ const memberSchema = new Schema(
 
 const conversationSchema = new Schema(
   {
-    type: { type: String, enum: ['private', 'group'], required: true },
-    members: { type: [memberSchema], validate: (v) => v.length >= 2 },
+    type: { type: String, enum: ['private', 'group', 'public'], required: true },
+    // Public rooms can start with just their creator, grow as people join, and
+    // may even go back down to zero if everyone leaves — the room itself
+    // persists either way. Private/group chats always need at least 2 members.
+    members: {
+      type: [memberSchema],
+      validate: {
+        validator: function validateMembers(v) {
+          return this.type === 'public' ? true : v.length >= 2;
+        },
+        message: 'A conversation needs at least 2 members',
+      },
+    },
 
-    // Group-only metadata
+    // Group/public-only metadata
     name: { type: String, trim: true, maxlength: 80, default: '' },
+    // Public rooms only — a short blurb shown in the room browser.
+    description: { type: String, trim: true, maxlength: 200, default: '' },
     avatar: { type: String, default: '' },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
 

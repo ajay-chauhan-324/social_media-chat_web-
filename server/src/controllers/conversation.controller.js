@@ -29,6 +29,28 @@ export const listConversations = asyncHandler(async (req, res) => {
   return ApiResponse.ok(res, { conversations }, 'Conversations');
 });
 
+// ── Public rooms ─────────────────────────────────────────────────────────────
+
+export const listPublicRooms = asyncHandler(async (req, res) => {
+  const rooms = await convService.listPublicRooms(req.user.id);
+  return ApiResponse.ok(res, { rooms }, 'Public rooms');
+});
+
+export const createPublicRoom = asyncHandler(async (req, res) => {
+  const conv = await convService.createPublicRoom(req.user.id, req.body);
+  joinUsersToConversation([String(req.user.id)], conv._id);
+  // Let every connected client's room browser update live.
+  emitToUsers([String(req.user.id)], 'conversation:new', { conversationId: String(conv._id) });
+  return ApiResponse.created(res, { conversation: conv }, 'Room created');
+});
+
+export const joinPublicRoom = asyncHandler(async (req, res) => {
+  const conv = await convService.joinPublicRoom(req.user.id, req.params.id);
+  joinUsersToConversation([String(req.user.id)], conv._id);
+  emitToUsers([String(req.user.id)], 'conversation:new', { conversationId: String(conv._id) });
+  return ApiResponse.ok(res, { conversation: conv }, 'Joined room');
+});
+
 export const getConversation = asyncHandler(async (req, res) => {
   const conversation = await convService.getConversation(req.params.id, req.user.id);
   return ApiResponse.ok(res, { conversation }, 'Conversation');

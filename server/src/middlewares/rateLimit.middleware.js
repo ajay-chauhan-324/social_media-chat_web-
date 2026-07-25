@@ -31,3 +31,12 @@ export const aiLimiter = rateLimit({
   legacyHeaders: false,
   handler,
 });
+
+/** Limiter for sending chat messages — generous for real conversation, blunts spam/bots. */
+export const messageLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler,
+});

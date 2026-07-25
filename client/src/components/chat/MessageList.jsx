@@ -115,7 +115,7 @@ export default function MessageList({ conversationId, conversation, onReply }) {
     );
   }
 
-  const isGroup = conversation?.type === 'group';
+  const isGroup = conversation?.type === 'group' || conversation?.type === 'public';
   let lastDay = null;
 
   return (

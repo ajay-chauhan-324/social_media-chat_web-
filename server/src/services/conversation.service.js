@@ -61,6 +61,63 @@ export const getOrCreatePrivate = async (userId, otherUsername) => {
   return decorate(conv, userId);
 };
 
+// ── Public rooms ─────────────────────────────────────────────────────────────
+// Open, joinable-by-anyone conversations (e.g. "General", "Tech", "Random").
+// Reuse the same Conversation/Message models and socket fan-out as DMs/groups —
+// the only difference is membership has no follow-gate and is public to list.
+
+/** All public rooms, annotated with member count + whether the viewer has joined. */
+export const listPublicRooms = async (userId) => {
+  const rooms = await Conversation.find({ type: 'public' })
+    .select('name description members lastMessageAt createdAt')
+    .sort({ name: 1 })
+    .lean();
+  return rooms.map((r) => ({
+    _id: r._id,
+    name: r.name,
+    description: r.description,
+    memberCount: r.members.length,
+    isMember: r.members.some((m) => String(m.user) === String(userId)),
+    createdAt: r.createdAt,
+  }));
+};
+
+export const createPublicRoom = async (creatorId, { name, description = '' }) => {
+  const trimmed = name?.trim();
+  if (!trimmed) throw ApiError.badRequest('Room name is required');
+
+  const existing = await Conversation.findOne({
+    type: 'public',
+    name: { $regex: `^${trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' },
+  });
+  if (existing) throw ApiError.conflict('A room with that name already exists');
+
+  let conv = await Conversation.create({
+    type: 'public',
+    name: trimmed,
+    description: description.trim(),
+    createdBy: creatorId,
+    members: [{ user: creatorId, role: 'admin' }],
+    lastMessageAt: new Date(),
+  });
+  conv = await populateConv(Conversation.findById(conv._id));
+  return decorate(conv, creatorId);
+};
+
+/** Join a public room — no follow-gate, no invite needed. Idempotent. */
+export const joinPublicRoom = async (userId, conversationId) => {
+  if (!mongoose.isValidObjectId(conversationId)) throw ApiError.badRequest('Invalid room id');
+  const conv = await Conversation.findOne({ _id: conversationId, type: 'public' });
+  if (!conv) throw ApiError.notFound('Room not found');
+
+  if (!conv.members.some((m) => String(m.user) === String(userId))) {
+    conv.members.push({ user: userId, role: 'member' });
+    await conv.save();
+  }
+  const populated = await populateConv(Conversation.findById(conv._id));
+  return decorate(populated, userId);
+};
+
 export const createGroup = async (creatorId, { name, memberUsernames = [] }) => {
   if (!name?.trim()) throw ApiError.badRequest('Group name is required');
   const users = await User.find({ username: { $in: memberUsernames } }).select('_id');
@@ -130,18 +187,20 @@ export const addMembers = async (conversationId, userId, memberUsernames = []) =
   return decorate(populated, userId);
 };
 
-/** Delete a conversation and all its messages. Any member may delete it. */
+/** Delete a private/group conversation and all its messages. Any member may delete it. */
 export const deleteConversation = async (conversationId, userId) => {
   const conv = await assertMember(conversationId, userId);
+  if (conv.type === 'public') throw ApiError.badRequest('Leave a public room instead of deleting it');
   const ids = conv.members.map((m) => String(m.user._id || m.user));
   await Message.deleteMany({ conversation: conv._id });
   await Conversation.findByIdAndDelete(conv._id);
   return { conversationId: String(conversationId), memberIds: ids };
 };
 
+/** Leave a group or public room (private conversations can't be "left" — delete them instead). */
 export const leaveGroup = async (conversationId, userId) => {
   const conv = await assertMember(conversationId, userId);
-  if (conv.type !== 'group') throw ApiError.badRequest('You can only leave groups');
+  if (conv.type === 'private') throw ApiError.badRequest('You can only leave groups or rooms');
   conv.members = conv.members.filter((m) => String(m.user) !== String(userId));
   await conv.save();
   return { left: true };
