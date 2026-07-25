@@ -84,9 +84,10 @@ export const TOOLS = {
 
 export const isTool = (t) => Object.prototype.hasOwnProperty.call(TOOLS, t);
 
-// ── Mock responses (used when no Gemini key is configured) ──────────────────
+// ── Mock responses (used when no Gemini key is configured, or as a graceful
+// degrade when Gemini's quota is exhausted) ──────────────────────────────────
 const clip = (s, n) => (s.length > n ? `${s.slice(0, n).trim()}…` : s);
-const mockFor = (tool, input) => {
+const mockFor = (tool, input, { quotaExceeded = false } = {}) => {
   const t = input.trim();
   switch (tool) {
     case 'caption':
@@ -114,7 +115,9 @@ const mockFor = (tool, input) => {
     case 'imageprompt':
       return `A cinematic, highly-detailed scene of ${clip(t, 60)}, golden-hour lighting, shallow depth of field, warm color grade, 8k, photorealistic.`;
     default:
-      return `Here's a helpful take on "${clip(t, 80)}":\n\nThis is a mock response — add your GEMINI_API_KEY to the server .env to get real AI answers. In the meantime, the full AI experience (history, tools, saving, app-aware answers) works end-to-end.`;
+      return quotaExceeded
+        ? `Here's a quick take on "${clip(t, 80)}":\n\nReal AI replies are temporarily paused — today's usage limit was reached. This is a basic fallback response; please try again later for a fully AI-generated answer.`
+        : `Here's a helpful take on "${clip(t, 80)}":\n\nThis is a mock response — add your GEMINI_API_KEY to the server .env to get real AI answers. In the meantime, the full AI experience (history, tools, saving, app-aware answers) works end-to-end.`;
   }
 };
 
@@ -130,13 +133,13 @@ const withTimeout = (promise, ms) =>
     ),
   ]);
 
+/** True for Gemini rate/quota errors specifically — retrying won't help until it resets. */
+const isQuotaError = (err) => (err.status || err.code) === 429 || /quota|rate/i.test(err.message);
+
 /** Translate a Gemini/network failure into a friendly ApiError. */
 const asApiError = (err) => {
   logger.error('Gemini error:', err.message);
-  const status = err.status || err.code;
-  if (status === 429 || /quota|rate/i.test(err.message)) {
-    return ApiError.tooMany('AI is busy right now — please try again shortly');
-  }
+  if (isQuotaError(err)) return ApiError.tooMany('AI is busy right now — please try again shortly');
   if (err.code === 'ETIMEDOUT') return new ApiError(504, 'AI request timed out — please try again');
   return new ApiError(502, 'AI service is unavailable right now');
 };
@@ -170,6 +173,11 @@ const complete = async (tool, messages) => {
     }
     return { content, tokens: res.usageMetadata?.totalTokenCount || 0, mocked: false };
   } catch (err) {
+    if (isQuotaError(err)) {
+      logger.error('Gemini quota exhausted — falling back to mock response:', err.message);
+      const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+      return { content: mockFor(tool, lastUser?.content || '', { quotaExceeded: true }), tokens: 0, mocked: true };
+    }
     throw asApiError(err);
   }
 };
@@ -210,6 +218,15 @@ const completeAssistant = async (user, messages) => {
         REQUEST_TIMEOUT
       );
     } catch (err) {
+      if (isQuotaError(err)) {
+        logger.error('Gemini quota exhausted — falling back to mock response:', err.message);
+        const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+        return {
+          content: mockFor('assistant', lastUser?.content || '', { quotaExceeded: true }),
+          tokens: totalTokens,
+          mocked: true,
+        };
+      }
       throw asApiError(err);
     }
     totalTokens += res.usageMetadata?.totalTokenCount || 0;
